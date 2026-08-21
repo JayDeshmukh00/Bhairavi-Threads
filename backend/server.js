@@ -22,5 +22,10 @@ app.use('/api/user', userRoutes);
 app.use('/api', productRoutes);
 app.use('/api', orderRoutes);
 
+// Root route check for deployment status
+app.get('/', (req, res) => {
+  res.send('Bhairavi Threads Backend is running successfully!');
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
