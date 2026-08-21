@@ -16,10 +16,11 @@ import OrdersView from './views/OrdersView';
 import AdminView from './views/AdminView';
 
 export default function App() {
+  const API_BASE = (import.meta.env?.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+  
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [userEmail, setUserEmail] = useState(localStorage.getItem('email') || '');
   
-  // Show landing page only if session storage doesn't mark it as seen
   const [hasSeenLanding, setHasSeenLanding] = useState(sessionStorage.getItem('seenLanding') === 'true');
   const [currentTab, setCurrentTab] = useState(hasSeenLanding ? 'store' : 'landing');
   
@@ -54,8 +55,6 @@ export default function App() {
   const [excelFile, setExcelFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [activeTechnique, setActiveTechnique] = useState(collectionsList[0]);
-
-  const API_BASE = (import.meta.env?.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
 
   const fetchData = () => {
     axios.get(`${API_BASE}/api/products`)
@@ -244,7 +243,6 @@ export default function App() {
             }}
           />
 
-          {/* Professional Fluid Widescreen Container */}
           <main className="w-[94%] max-w-[1600px] mx-auto py-8 md:py-12">
             {detailProduct ? (
               <ProductDetailView 
