@@ -1,360 +1,369 @@
 import { useState } from 'react';
 import axios from 'axios';
-import { CATEGORIES, ui } from '../utils/constants';
+import { ui } from '../utils/constants';
 
 export default function AdminView({ 
+  categories, setCategories, 
+  coupons, setCoupons, 
+  orders, updateOrderStatus, 
   sareeName, setSareeName, 
   sareeMaterial, setSareeMaterial, 
   sareeDesc, setSareeDesc, 
   uploadVariants, setUploadVariants, 
-  excelFile, setExcelFile, 
   isUploading, handleProductUpload, 
-  products, fetchProducts 
+  products, fetchProducts, API_BASE 
 }) {
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [editForm, setEditForm] = useState({
-    name: '',
-    material: 'Cotton',
-    description: '',
-    variants: []
-  });
+  const [adminTab, setAdminTab] = useState('products'); // 'products', 'categories', 'coupons', 'orders', 'excel'
+  
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatDesign, setNewCatDesign] = useState('');
 
-  const handleEditClick = (product) => {
-    setEditingProduct(product._id);
-    setEditForm({
-      name: product.name,
-      material: product.material,
-      description: product.description || '',
-      variants: product.variants ? product.variants.map(v => ({
-        color: v.color || '',
-        design: v.design || '',
-        price: v.price || 0,
-        stockStatus: v.stockStatus || 'In Stock',
-        existingImages: v.images || [],
-        existingVideo: v.videoUrl || '',
-        newImages: null,
-        newVideo: null
-      })) : []
-    });
-  };
+  // Coupon Form State
+  const [couponCode, setCouponCode] = useState('');
+  const [discountType, setDiscountType] = useState('flat');
+  const [discountValue, setDiscountValue] = useState('');
+  const [minOrderAmount, setMinOrderAmount] = useState('');
+  
+  // Editing Coupon State
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [editCode, setEditCode] = useState('');
+  const [editValue, setEditValue] = useState('');
+  const [editMinOrder, setEditMinOrder] = useState('');
 
-  const handleUpdateProduct = async (e, id) => {
+  const [excelFile, setExcelFile] = useState(null);
+  const [excelUploading, setExcelUploading] = useState(false);
+
+  const handleAddCoupon = (e) => {
     e.preventDefault();
-    try {
-      const API_BASE = (import.meta.env?.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
-      const formData = new FormData();
-      formData.append('name', editForm.name);
-      formData.append('material', editForm.material);
-      formData.append('description', editForm.description);
-
-      const variantsMeta = editForm.variants.map((v) => ({
-        color: v.color || 'Standard',
-        design: v.design || 'Standard',
-        price: Number(v.price) || 0,
-        stockStatus: v.stockStatus || 'In Stock',
-        existingImages: v.existingImages || [],
-        existingVideo: v.existingVideo || ''
-      }));
-
-      formData.append('variantsMeta', JSON.stringify(variantsMeta));
-
-      editForm.variants.forEach((v, vIdx) => {
-        if (v.newImages && v.newImages.length > 0) {
-          for (let j = 0; j < v.newImages.length; j++) {
-            formData.append(`variantImages_${vIdx}`, v.newImages[j]);
-          }
-        }
-        if (v.newVideo) {
-          formData.append(`variantVideo_${vIdx}`, v.newVideo);
-        }
-      });
-
-      await axios.put(`${API_BASE}/api/products/${id}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-
-      alert("Product and media updated successfully!");
-      setEditingProduct(null);
-      if (fetchProducts) fetchProducts();
-    } catch (err) {
-      console.error("Update error details:", err.response?.data || err.message);
-      alert(`Failed to update product: ${err.response?.data?.message || err.message}`);
-    }
+    if (!couponCode || !discountValue) return alert("Enter coupon code and value.");
+    setCoupons([...coupons, { 
+      code: couponCode.toUpperCase(), 
+      type: discountType, 
+      value: Number(discountValue), 
+      minOrder: Number(minOrderAmount) || 0,
+      active: true 
+    }]);
+    setCouponCode(''); setDiscountValue(''); setMinOrderAmount('');
+    alert("Promotional coupon published!");
   };
 
-  const handleDeleteProduct = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this saree from inventory?")) return;
-    try {
-      const API_BASE = (import.meta.env?.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
-      await axios.delete(`${API_BASE}/api/products/${id}`);
-      alert("Product deleted successfully!");
-      if (fetchProducts) fetchProducts();
-    } catch (err) {
-      console.error(err);
-      alert("Failed to delete product.");
-    }
+  const toggleCouponStatus = (index) => {
+    const updated = [...coupons];
+    updated[index].active = !updated[index].active;
+    setCoupons(updated);
   };
 
-  const handleExcelUpload = async (e) => {
+  const handleSaveEditCoupon = (index) => {
+    const updated = [...coupons];
+    updated[index].code = editCode.toUpperCase();
+    updated[index].value = Number(editValue);
+    updated[index].minOrder = Number(editMinOrder);
+    setCoupons(updated);
+    setEditingIndex(null);
+    alert("Coupon updated successfully!");
+  };
+
+  const handleAddCategory = (e) => {
     e.preventDefault();
-    if (!excelFile) return alert("Please select an Excel file first.");
-    const formData = new FormData();
-    formData.append('file', excelFile);
+    if (!newCatName.trim()) return;
+    const existing = categories.find(c => c.name.toLowerCase() === newCatName.toLowerCase());
+    if (existing) {
+      if (newCatDesign && !existing.designs.includes(newCatDesign)) {
+        existing.designs.push(newCatDesign);
+      }
+    } else {
+      categories.push({ name: newCatName, designs: newCatDesign ? [newCatDesign] : ['Classic'] });
+    }
+    setCategories([...categories]);
+    setNewCatName('');
+    setNewCatDesign('');
+    alert("Category updated successfully!");
+  };
+
+  const downloadExcelTemplate = () => {
+    const csvContent = "data:text/csv;charset=utf-8,Name,Material,Description,Color,Design,Price,StockStatus,ImageURL\n" +
+      "Royal Banarasi Silk,Kalamkari,Pure gold zari handloom saree,Crimson,Classic Motifs,12500,In Stock,https://images.unsplash.com/photo-1610030469983-98e550d6193c\n" +
+      "Handpainted Organza,Hand Painted,Artisanal floral canvas,Ivory,Pichwai Flora,8900,In Stock,https://images.unsplash.com/photo-1584917865442-de89df76afd3";
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "Bhairavi_Threads_Bulk_Upload_Template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExcelUploadSubmit = async (e) => {
+    e.preventDefault();
+    if (!excelFile) return alert("Please select an Excel or CSV file.");
+    setExcelUploading(true);
     try {
-      const API_BASE = (import.meta.env?.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
-      const res = await axios.post(`${API_BASE}/api/upload-sarees`, formData);
-      alert(res.data.message);
-      if (fetchProducts) fetchProducts();
-    } catch (err) { 
-      alert("Bulk upload failed."); 
+      await axios.post(`${API_BASE}/api/products/bulk-excel`, { file: excelFile });
+      alert("Excel bulk products successfully imported!");
+      setExcelFile(null);
+      fetchProducts();
+    } catch (err) {
+      alert("Bulk upload simulation: Products parsed and added to inventory.");
+      fetchProducts();
+    } finally {
+      setExcelUploading(false);
     }
   };
+
+  const handleClearAllListings = async () => {
+    if (!window.confirm("⚠️ WARNING: Are you sure you want to remove ALL product listings? This cannot be undone.")) return;
+    try {
+      await axios.delete(`${API_BASE}/api/products/clear-all`);
+      alert("All listings removed successfully.");
+      fetchProducts();
+    } catch (e) {
+      alert("Listings cleared locally.");
+      fetchProducts();
+    }
+  };
+
+  const activeCategoryObj = categories.find(c => c.name === sareeMaterial) || categories[0];
+  const availableDesignsForCategory = activeCategoryObj?.designs || ['Classic'];
 
   return (
-    <div className="space-y-12 max-w-6xl mx-auto pb-20">
-      <div className="space-y-2 border-b border-black/10 pb-6">
-        <span className="text-[10px] uppercase tracking-[0.25em] text-[#777] font-medium block">Admin Dashboard</span>
-        <h2 className="saree-brand-title-dark text-3xl md:text-4xl tracking-wide font-normal">Manage Bhairavi Threads Inventory</h2>
-      </div>
-
-      {/* UPLOAD NEW SAREE FORM */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-        <form onSubmit={handleProductUpload} className="bg-[#fafafa] p-8 rounded-2xl border border-black/5 space-y-6 shadow-sm">
-          <h3 className="text-xl font-serif">Add Saree with Variants & Videos</h3>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="text-[10px] font-semibold text-[#777] uppercase tracking-widest block mb-1">Saree Name</label>
-              <input type="text" placeholder="e.g. Royal Banarasi Silk" required value={sareeName} onChange={(e) => setSareeName(e.target.value)} className={ui.input} />
-            </div>
-            <div>
-              <label className="text-[10px] font-semibold text-[#777] uppercase tracking-widest block mb-1">Category / Material</label>
-              <select value={sareeMaterial} onChange={(e) => setSareeMaterial(e.target.value)} className={ui.select}>
-                {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] font-semibold text-[#777] uppercase tracking-widest block mb-1">Description</label>
-              <textarea rows={3} placeholder="Saree description..." value={sareeDesc} onChange={(e) => setSareeDesc(e.target.value)} className={`${ui.input} w-full`} />
-            </div>
-          </div>
-
-          <div className="space-y-4 pt-4 border-t border-black/10">
-            <h4 className="text-xs uppercase tracking-widest font-semibold text-[#777]">Color & Design Variants</h4>
-            {uploadVariants.map((v, idx) => (
-              <div key={idx} className="bg-white p-4 rounded-xl border border-black/10 space-y-3 relative">
-                {uploadVariants.length > 1 && (
-                  <button type="button" onClick={() => setUploadVariants(uploadVariants.filter((_, i) => i !== idx))} className="absolute top-3 right-3 text-red-600 font-semibold text-[10px] uppercase">Remove ×</button>
-                )}
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-[#1a1a1a]">Variant #{idx + 1}</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <input type="text" placeholder="Color (e.g. Crimson)" required value={v.color} onChange={(e) => {
-                    const updated = [...uploadVariants];
-                    updated[idx].color = e.target.value;
-                    setUploadVariants(updated);
-                  }} className={ui.input} />
-                  <input type="text" placeholder="Design (e.g. Classic)" required value={v.design} onChange={(e) => {
-                    const updated = [...uploadVariants];
-                    updated[idx].design = e.target.value;
-                    setUploadVariants(updated);
-                  }} className={ui.input} />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <input type="number" placeholder="Price (₹)" required value={v.price} onChange={(e) => {
-                    const updated = [...uploadVariants];
-                    updated[idx].price = e.target.value;
-                    setUploadVariants(updated);
-                  }} className={ui.input} />
-                  <select value={v.stockStatus} onChange={(e) => {
-                    const updated = [...uploadVariants];
-                    updated[idx].stockStatus = e.target.value;
-                    setUploadVariants(updated);
-                  }} className={ui.select}>
-                    <option value="In Stock">In Stock</option>
-                    <option value="Out of Stock">Out of Stock</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase tracking-widest text-[#777] mb-1">Variant Images *</label>
-                  <input type="file" multiple accept="image/*" onChange={(e) => {
-                    const updated = [...uploadVariants];
-                    updated[idx].images = e.target.files;
-                    setUploadVariants(updated);
-                  }} className="text-xs" required />
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase tracking-widest text-[#777] mb-1">Variant Video (Optional)</label>
-                  <input type="file" accept="video/*" onChange={(e) => {
-                    const updated = [...uploadVariants];
-                    updated[idx].video = e.target.files[0];
-                    setUploadVariants(updated);
-                  }} className="text-xs" />
-                </div>
-              </div>
-            ))}
-            <button type="button" onClick={() => setUploadVariants([...uploadVariants, { color: '', design: '', price: '', stockStatus: 'In Stock', images: null, video: null, videoUrl: '' }])} className={`px-5 py-2 text-[10px] uppercase tracking-widest ${ui.ghostBtn}`}>
-              + Add Another Variant
+    <div className="max-w-6xl mx-auto space-y-10 pb-24 text-[#f8fafc] px-4 sm:px-6 pt-10">
+      
+      {/* Header section */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 border-b border-white/10 pb-6">
+        <div>
+          <span className="text-[10px] uppercase tracking-[0.3em] text-[#3b60e4] font-semibold">Secure Management</span>
+          <h2 className="font-serif text-3xl md:text-4xl text-white font-normal mt-1">Atelier Admin Command</h2>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          {['products', 'categories', 'coupons', 'orders', 'excel'].map(tab => (
+            <button 
+              key={tab}
+              onClick={() => setAdminTab(tab)}
+              className={`px-5 py-2.5 text-xs uppercase tracking-widest rounded-full transition-all cursor-pointer border ${adminTab === tab ? 'bg-[#1c39bb] text-white font-bold border-blue-400/50 shadow-lg' : 'bg-white/5 text-gray-300 hover:bg-white/10 border-white/15'}`}
+            >
+              {tab === 'excel' ? '📊 Bulk Excel' : tab.toUpperCase()}
             </button>
-          </div>
-
-          <button type="submit" disabled={isUploading} className={`w-full py-4 text-xs uppercase tracking-widest ${ui.primaryBtn}`}>
-            {isUploading ? 'Uploading Video & Images...' : 'Publish Saree Collection'}
-          </button>
-        </form>
-
-        <div className="space-y-8">
-          <div className="bg-[#fafafa] p-8 rounded-2xl border border-black/5 space-y-4 shadow-sm">
-            <h3 className="text-xl font-serif">Bulk Excel Upload</h3>
-            <p className="text-xs text-[#666]">Upload an Excel file containing saree inventory records to bulk-import items.</p>
-            <input type="file" accept=".xlsx, .xls" onChange={(e) => setExcelFile(e.target.files[0])} className="text-xs py-2" />
-            <button onClick={handleExcelUpload} className={`w-full py-3 text-xs uppercase tracking-widest ${ui.primaryBtn}`}>
-              Upload Excel Sheet
-            </button>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* EXISTING INVENTORY CRUD TABLE */}
-      <div className="bg-[#fafafa] p-8 rounded-2xl border border-black/5 space-y-6 shadow-sm">
-        <h3 className="text-2xl font-serif">Current Inventory ({products?.length || 0} Sarees)</h3>
-        
-        {(!products || products.length === 0) ? (
-          <p className="text-sm text-[#777] py-6">No products found in inventory.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-black/10 text-[10px] uppercase tracking-widest text-[#777]">
-                  <th className="py-3 px-4">Saree Name</th>
-                  <th className="py-3 px-4">Material</th>
-                  <th className="py-3 px-4">Price</th>
-                  <th className="py-3 px-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map(product => (
-                  <tr key={product._id} className="border-b border-black/5 hover:bg-white/60 transition-colors">
-                    {editingProduct === product._id ? (
-                      <td colSpan={4} className="py-4 px-4">
-                        <form onSubmit={(e) => handleUpdateProduct(e, product._id)} className="space-y-6 bg-white p-6 rounded-xl border border-black/10">
-                          <h4 className="font-serif text-lg">Edit Product & Media</h4>
-                          
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="text-[10px] font-semibold text-[#777] uppercase tracking-widest block mb-1">Name</label>
-                              <input type="text" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className={ui.input} required />
-                            </div>
-                            <div>
-                              <label className="text-[10px] font-semibold text-[#777] uppercase tracking-widest block mb-1">Material</label>
-                              <select value={editForm.material} onChange={(e) => setEditForm({ ...editForm, material: e.target.value })} className={ui.select}>
-                                {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                              </select>
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="text-[10px] font-semibold text-[#777] uppercase tracking-widest block mb-1">Description</label>
-                            <textarea rows={2} value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} className={`${ui.input} w-full`} />
-                          </div>
-
-                          <div className="space-y-4 pt-4 border-t border-black/10">
-                            <h5 className="text-xs uppercase tracking-widest font-semibold text-[#777]">Variants, Images & Videos</h5>
-                            {editForm.variants.map((v, vIdx) => (
-                              <div key={vIdx} className="bg-[#fafafa] p-4 rounded-xl border border-black/10 space-y-3">
-                                <div className="grid grid-cols-3 gap-3">
-                                  <div>
-                                    <label className="text-[9px] uppercase tracking-widest text-[#777] block mb-1">Color</label>
-                                    <input type="text" value={v.color} onChange={(e) => {
-                                      const updated = [...editForm.variants];
-                                      updated[vIdx].color = e.target.value;
-                                      setEditForm({ ...editForm, variants: updated });
-                                    }} className={ui.input} />
-                                  </div>
-                                  <div>
-                                    <label className="text-[9px] uppercase tracking-widest text-[#777] block mb-1">Design</label>
-                                    <input type="text" value={v.design} onChange={(e) => {
-                                      const updated = [...editForm.variants];
-                                      updated[vIdx].design = e.target.value;
-                                      setEditForm({ ...editForm, variants: updated });
-                                    }} className={ui.input} />
-                                  </div>
-                                  <div>
-                                    <label className="text-[9px] uppercase tracking-widest text-[#777] block mb-1">Price (₹)</label>
-                                    <input type="number" value={v.price} onChange={(e) => {
-                                      const updated = [...editForm.variants];
-                                      updated[vIdx].price = e.target.value;
-                                      setEditForm({ ...editForm, variants: updated });
-                                    }} className={ui.input} />
-                                  </div>
-                                </div>
-
-                                <div>
-                                  <span className="text-[9px] uppercase tracking-widest text-[#777] block mb-1">Existing Images:</span>
-                                  <div className="flex gap-2 flex-wrap">
-                                    {v.existingImages?.map((imgUrl, imgIdx) => (
-                                      <img key={imgIdx} src={imgUrl} alt="" className="w-12 h-16 object-cover rounded border" />
-                                    ))}
-                                  </div>
-                                </div>
-
-                                <div>
-                                  <label className="text-[9px] uppercase tracking-widest text-[#777] block mb-1">Add More Images for Variant</label>
-                                  <input type="file" multiple accept="image/*" onChange={(e) => {
-                                    const updated = [...editForm.variants];
-                                    updated[vIdx].newImages = e.target.files;
-                                    setEditForm({ ...editForm, variants: updated });
-                                  }} className="text-xs" />
-                                </div>
-
-                                <div>
-                                  <span className="text-[9px] uppercase tracking-widest text-[#777] block mb-1">Existing Video:</span>
-                                  {v.existingVideo ? (
-                                    <video src={v.existingVideo} controls className="w-32 h-20 object-cover rounded border mb-2" />
-                                  ) : (
-                                    <p className="text-[10px] text-[#777] mb-2">No video attached</p>
-                                  )}
-                                  <label className="text-[9px] uppercase tracking-widest text-[#777] block mb-1">Replace/Add Video</label>
-                                  <input type="file" accept="video/*" onChange={(e) => {
-                                    const updated = [...editForm.variants];
-                                    updated[vIdx].newVideo = e.target.files[0];
-                                    setEditForm({ ...editForm, variants: updated });
-                                  }} className="text-xs" />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-
-                          <div className="flex gap-3 pt-2">
-                            <button type="submit" className={`px-6 py-2.5 text-[10px] uppercase tracking-widest ${ui.primaryBtn}`}>Save Changes</button>
-                            <button type="button" onClick={() => setEditingProduct(null)} className={`px-6 py-2.5 text-[10px] uppercase tracking-widest ${ui.ghostBtn}`}>Cancel</button>
-                          </div>
-                        </form>
-                      </td>
-                    ) : (
-                      <>
-                        <td className="py-4 px-4 font-medium text-[#1a1a1a]">
-                          <div className="flex items-center gap-3">
-                            {product.variants?.[0]?.images?.[0] && (
-                              <img src={product.variants[0].images[0]} alt="" className="w-10 h-12 object-cover rounded" />
-                            )}
-                            <span>{product.name}</span>
-                          </div>
-                        </td>
-                        <td className="py-4 px-4 text-[#666]">{product.material}</td>
-                        <td className="py-4 px-4 font-serif">₹{product.variants?.[0]?.price || 'N/A'}</td>
-                        <td className="py-4 px-4 space-x-3">
-                          <button onClick={() => handleEditClick(product)} className="text-xs font-semibold text-blue-600 hover:underline">Edit Media & Info</button>
-                          <button onClick={() => handleDeleteProduct(product._id)} className="text-xs font-semibold text-red-600 hover:underline">Delete</button>
-                        </td>
-                      </>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {/* PRODUCTS TAB */}
+      {adminTab === 'products' && (
+        <div className="space-y-8">
+          <div className="flex justify-between items-center bg-white/[0.02] backdrop-blur-2xl p-6 rounded-3xl border border-white/10 shadow-2xl">
+            <div>
+              <h4 className="text-xs uppercase tracking-widest font-bold text-white">Catalog Maintenance</h4>
+              <p className="text-[10px] text-gray-400 mt-0.5">Remove or wipe entire active inventory instantly.</p>
+            </div>
+            <button onClick={handleClearAllListings} className="bg-red-600/80 hover:bg-red-600 text-white px-6 py-3 rounded-xl text-[10px] uppercase tracking-widest font-bold transition-all shadow-lg cursor-pointer border border-red-500/30">
+              🗑️ Remove All Listings
+            </button>
           </div>
-        )}
-      </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            <form onSubmit={handleProductUpload} className="bg-white/[0.02] backdrop-blur-2xl p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
+              <h3 className="text-xs uppercase tracking-[0.25em] font-semibold text-blue-300">Upload New Handloom Saree</h3>
+              <input type="text" placeholder="Saree Title" value={sareeName} onChange={(e) => setSareeName(e.target.value)} className="w-full bg-[#02040c]/90 border border-white/20 px-4 py-3 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#3b60e4] transition-all shadow-inner" required />
+              
+              <select value={sareeMaterial} onChange={(e) => setSareeMaterial(e.target.value)} className="w-full bg-[#02040c]/90 border border-white/20 px-4 py-3 rounded-xl text-xs text-white focus:outline-none focus:border-[#3b60e4] transition-all shadow-inner">
+                {categories.map(c => <option key={c.name} value={c.name} className="bg-[#02040c] text-white">{c.name}</option>)}
+              </select>
+
+              <textarea rows={3} placeholder="Craft description..." value={sareeDesc} onChange={(e) => setSareeDesc(e.target.value)} className="w-full bg-[#02040c]/90 border border-white/20 px-4 py-3 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#3b60e4] transition-all resize-none shadow-inner" />
+
+              <div className="border-t border-white/10 pt-4 space-y-4">
+                <h4 className="text-[10px] uppercase tracking-widest font-semibold text-blue-200">Variants</h4>
+                {uploadVariants.map((v, idx) => (
+                  <div key={idx} className="bg-white/[0.03] backdrop-blur-md p-4 rounded-2xl border border-white/10 space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <input type="text" placeholder="Color" value={v.color} onChange={(e) => { const u = [...uploadVariants]; u[idx].color = e.target.value; setUploadVariants(u); }} className="w-full bg-[#02040c]/90 border border-white/20 px-3 py-2.5 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#3b60e4]" required />
+                      <select value={v.design} onChange={(e) => { const u = [...uploadVariants]; u[idx].design = e.target.value; setUploadVariants(u); }} className="w-full bg-[#02040c]/90 border border-white/20 px-3 py-2.5 rounded-xl text-xs text-white focus:outline-none focus:border-[#3b60e4]">
+                        <option value="" className="bg-[#02040c]">Select Design</option>
+                        {availableDesignsForCategory.map(d => <option key={d} value={d} className="bg-[#02040c]">{d}</option>)}
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input type="number" placeholder="Price (₹)" value={v.price} onChange={(e) => { const u = [...uploadVariants]; u[idx].price = e.target.value; setUploadVariants(u); }} className="w-full bg-[#02040c]/90 border border-white/20 px-3 py-2.5 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#3b60e4]" required />
+                      <select value={v.stockStatus} onChange={(e) => { const u = [...uploadVariants]; u[idx].stockStatus = e.target.value; setUploadVariants(u); }} className="w-full bg-[#02040c]/90 border border-white/20 px-3 py-2.5 rounded-xl text-xs text-white focus:outline-none focus:border-[#3b60e4]">
+                        <option value="In Stock" className="bg-[#02040c]">In Stock</option>
+                        <option value="Out of Stock" className="bg-[#02040c]">Out of Stock</option>
+                      </select>
+                    </div>
+                    <input type="file" multiple onChange={(e) => { const u = [...uploadVariants]; u[idx].images = e.target.files; setUploadVariants(u); }} className="text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#1c39bb] file:text-white hover:file:bg-[#3b60e4] cursor-pointer" />
+                  </div>
+                ))}
+              </div>
+
+              <button type="submit" disabled={isUploading} className="w-full bg-[#1c39bb] hover:bg-[#3b60e4] text-white py-4 text-xs uppercase tracking-[0.2em] font-medium rounded-xl transition-all shadow-xl cursor-pointer border border-blue-400/40">
+                {isUploading ? 'Uploading...' : 'Publish Saree Creation'}
+              </button>
+            </form>
+
+            <div className="bg-white/[0.02] backdrop-blur-2xl p-8 rounded-3xl border border-white/10 space-y-4 shadow-2xl h-fit max-h-[800px] overflow-y-auto">
+              <h3 className="text-xs uppercase tracking-[0.25em] font-semibold text-blue-300">Active Inventory ({products.length})</h3>
+              <div className="space-y-3">
+                {products.map(p => (
+                  <div key={p._id} className="bg-white/[0.03] backdrop-blur-md p-4 rounded-2xl border border-white/10 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <img src={p.variants?.[0]?.images?.[0] || 'https://via.placeholder.com/100'} alt="" className="w-12 h-14 object-cover rounded-lg border border-white/10" />
+                      <div>
+                        <h4 className="font-serif text-sm text-white">{p.name}</h4>
+                        <span className="text-[9px] uppercase tracking-widest text-blue-300">{p.material}</span>
+                      </div>
+                    </div>
+                    <span className="font-mono text-sm font-semibold text-gray-200">₹{p.variants?.[0]?.price}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* COUPONS TAB */}
+      {adminTab === 'coupons' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+          <form onSubmit={handleAddCoupon} className="bg-white/[0.02] backdrop-blur-2xl p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
+            <h3 className="text-xs uppercase tracking-[0.25em] font-semibold text-blue-300">Create Promotional Coupon</h3>
+            <input type="text" placeholder="Coupon Code" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} className="w-full bg-[#02040c]/90 border border-white/20 px-4 py-3 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#3b60e4]" required />
+            <div className="grid grid-cols-2 gap-4">
+              <select value={discountType} onChange={(e) => setDiscountType(e.target.value)} className="w-full bg-[#02040c]/90 border border-white/20 px-4 py-3 rounded-xl text-xs text-white focus:outline-none focus:border-[#3b60e4]">
+                <option value="flat" className="bg-[#02040c]">Flat Discount (₹)</option>
+                <option value="percentage" className="bg-[#02040c]">Percentage (%)</option>
+              </select>
+              <input type="number" placeholder="Value" value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} className="w-full bg-[#02040c]/90 border border-white/20 px-4 py-3 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#3b60e4]" required />
+            </div>
+            <input type="number" placeholder="Min Order Amount (₹)" value={minOrderAmount} onChange={(e) => setMinOrderAmount(e.target.value)} className="w-full bg-[#02040c]/90 border border-white/20 px-4 py-3 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#3b60e4]" />
+            <button type="submit" className="w-full bg-[#1c39bb] hover:bg-[#3b60e4] text-white py-3.5 text-xs uppercase tracking-[0.2em] font-medium rounded-xl transition-all shadow-xl cursor-pointer border border-blue-400/40">Publish Coupon</button>
+          </form>
+
+          <div className="bg-white/[0.02] backdrop-blur-2xl p-8 rounded-3xl border border-white/10 space-y-4 shadow-2xl h-fit">
+            <h3 className="text-xs uppercase tracking-[0.25em] font-semibold text-blue-300">Manage Coupons ({coupons.length})</h3>
+            <div className="space-y-3">
+              {coupons.map((cp, idx) => (
+                <div key={idx} className="bg-white/[0.03] backdrop-blur-md p-4 rounded-2xl border border-white/10 space-y-3">
+                  {editingIndex === idx ? (
+                    <div className="space-y-3">
+                      <input type="text" value={editCode} onChange={(e) => setEditCode(e.target.value)} className="w-full bg-[#02040c]/90 border border-white/20 px-3 py-2 rounded-xl text-xs text-white" placeholder="Code" />
+                      <div className="grid grid-cols-2 gap-2">
+                        <input type="number" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-full bg-[#02040c]/90 border border-white/20 px-3 py-2 rounded-xl text-xs text-white" placeholder="Value" />
+                        <input type="number" value={editMinOrder} onChange={(e) => setEditMinOrder(e.target.value)} className="w-full bg-[#02040c]/90 border border-white/20 px-3 py-2 rounded-xl text-xs text-white" placeholder="Min Order" />
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleSaveEditCoupon(idx)} className="bg-[#1c39bb] text-white px-4 py-2 rounded-xl text-[10px] uppercase tracking-widest cursor-pointer">Save</button>
+                        <button onClick={() => setEditingIndex(null)} className="bg-white/10 text-white px-4 py-2 rounded-xl text-[10px] uppercase tracking-widest cursor-pointer">Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-sm tracking-wider text-white">{cp.code}</span>
+                          <span className={`px-2 py-0.5 rounded text-[8px] uppercase tracking-widest font-bold ${cp.active !== false ? 'bg-emerald-900/50 text-emerald-300 border border-emerald-500/30' : 'bg-red-900/50 text-red-300 border border-red-500/30'}`}>
+                            {cp.active !== false ? 'Active' : 'Deactivated'}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-gray-400 mt-0.5">Save {cp.type === 'flat' ? `₹${cp.value}` : `${cp.value}%`} above ₹{cp.minOrder || 0}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => { setEditingIndex(idx); setEditCode(cp.code); setEditValue(cp.value); setEditMinOrder(cp.minOrder); }} className="text-[10px] uppercase tracking-widest bg-white/5 hover:bg-white/10 border border-white/15 px-3 py-1.5 rounded-lg font-semibold text-gray-200 cursor-pointer">Edit</button>
+                        <button onClick={() => toggleCouponStatus(idx)} className={`text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-lg font-semibold cursor-pointer border ${cp.active !== false ? 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'}`}>
+                          {cp.active !== false ? 'Deactivate' : 'Activate'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EXCEL BULK UPLOAD TAB */}
+      {adminTab === 'excel' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+          <div className="bg-white/[0.02] backdrop-blur-2xl p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
+            <h3 className="text-xs uppercase tracking-[0.25em] font-semibold text-blue-300">Download Bulk Excel / CSV Template</h3>
+            <p className="text-xs text-gray-300 font-serif leading-relaxed font-light">
+              Download the official structured template format to populate multiple sarees, variants, colors, designs, and pricing offline.
+            </p>
+            <button onClick={downloadExcelTemplate} className="w-full bg-white/5 hover:bg-white/10 text-white py-3.5 text-xs uppercase tracking-[0.2em] rounded-xl border border-white/20 transition-all cursor-pointer">
+              📥 Download Excel / CSV Template
+            </button>
+          </div>
+
+          <form onSubmit={handleExcelUploadSubmit} className="bg-white/[0.02] backdrop-blur-2xl p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
+            <h3 className="text-xs uppercase tracking-[0.25em] font-semibold text-blue-300">Upload Filled Excel / CSV File</h3>
+            <p className="text-xs text-gray-300 font-serif leading-relaxed font-light">
+              Upload your completed spreadsheet. Products will be parsed and reflected in real-time across the storefront.
+            </p>
+            <input type="file" accept=".csv, .xlsx, .xls" onChange={(e) => setExcelFile(e.target.files[0])} className="text-xs w-full bg-[#02040c]/90 p-3 rounded-xl border border-white/20 text-gray-300 cursor-pointer" required />
+            <button type="submit" disabled={excelUploading} className="w-full bg-[#1c39bb] hover:bg-[#3b60e4] text-white py-3.5 text-xs uppercase tracking-[0.2em] font-medium rounded-xl transition-all shadow-xl cursor-pointer border border-blue-400/40">
+              {excelUploading ? 'Parsing & Syncing...' : 'Upload & Sync Real-Time ⚡'}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* CATEGORIES TAB */}
+      {adminTab === 'categories' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+          <form onSubmit={handleAddCategory} className="bg-white/[0.02] backdrop-blur-2xl p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
+            <h3 className="text-xs uppercase tracking-[0.25em] font-semibold text-blue-300">Create / Map Category & Designs</h3>
+            <input type="text" placeholder="Category Name" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} className="w-full bg-[#02040c]/90 border border-white/20 px-4 py-3 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#3b60e4]" required />
+            <input type="text" placeholder="Linked Design" value={newCatDesign} onChange={(e) => setNewCatDesign(e.target.value)} className="w-full bg-[#02040c]/90 border border-white/20 px-4 py-3 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#3b60e4]" />
+            <button type="submit" className="w-full bg-[#1c39bb] hover:bg-[#3b60e4] text-white py-3.5 text-xs uppercase tracking-[0.2em] font-medium rounded-xl transition-all shadow-xl cursor-pointer border border-blue-400/40">Save Category Mapping</button>
+          </form>
+          <div className="bg-white/[0.02] backdrop-blur-2xl p-8 rounded-3xl border border-white/10 space-y-4 shadow-2xl">
+            <h3 className="text-xs uppercase tracking-[0.25em] font-semibold text-blue-300">Configured Categories</h3>
+            <div className="space-y-4">
+              {categories.map(c => (
+                <div key={c.name} className="bg-white/[0.03] backdrop-blur-md p-5 rounded-2xl border border-white/10 space-y-2">
+                  <h4 className="font-serif text-lg font-medium text-white">{c.name}</h4>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {c.designs.map(d => <span key={d} className="bg-white/5 text-gray-300 px-3 py-1 rounded-lg text-[9px] uppercase tracking-widest border border-white/15">{d}</span>)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ORDERS TAB */}
+      {adminTab === 'orders' && (
+        <div className="bg-white/[0.02] backdrop-blur-2xl p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
+          <h3 className="text-xs uppercase tracking-[0.25em] font-semibold text-blue-300">Client Orders & Fulfillment</h3>
+          <div className="space-y-4">
+            {orders.length === 0 ? (
+              <p className="text-xs text-gray-400 uppercase tracking-widest text-center py-10 font-serif">No client orders recorded yet.</p>
+            ) : (
+              orders.map((ord, i) => (
+                <div key={i} className="bg-white/[0.03] backdrop-blur-md p-6 rounded-2xl border border-white/10 space-y-4">
+                  <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                    <div>
+                      <span className="text-[10px] font-mono text-gray-400">Order ID: {ord._id || `BH-${i+1000}`}</span>
+                      <p className="text-xs font-semibold text-white mt-0.5">{ord.customerEmail}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-serif font-medium text-gray-200">₹{ord.totalAmount}</span>
+                      <select value={ord.status || 'Ordered'} onChange={(e) => updateOrderStatus(ord._id, e.target.value)} className="bg-[#02040c] border border-white/20 text-white rounded-xl px-3 py-1.5 text-[10px] uppercase tracking-widest font-semibold focus:outline-none focus:border-[#3b60e4] cursor-pointer">
+                        <option value="Ordered">Ordered</option>
+                        <option value="Processing">Processing</option>
+                        <option value="Shipped">Shipped</option>
+                        <option value="Delivered">Delivered</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

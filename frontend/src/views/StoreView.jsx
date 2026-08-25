@@ -1,192 +1,173 @@
-import { useState } from 'react';
-import { DESIGN_OPTIONS, COLOR_OPTIONS, MY_WHATSAPP_NUMBER, ui } from '../utils/constants';
+import { useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
 
 export default function StoreView({ 
-  products, searchQuery, setSearchQuery, 
-  filterDesign, setFilterDesign, filterColor, setFilterColor, 
-  sortBy, setSortBy, selectedVariants, handleVariantChange, 
-  addToCart, wishlist, setWishlist, setDetailProduct 
+  products, 
+  searchQuery, setSearchQuery, 
+  filterDesign, setFilterDesign, 
+  filterColor, setFilterColor, 
+  sortBy, setSortBy, 
+  selectedVariants, handleVariantChange, 
+  addToCart, wishlist, setWishlist, 
+  setDetailProduct,
+  currentTab, categories 
 }) {
-  const [hoveredCard, setHoveredCard] = useState(null);
-  const [openDrawerId, setOpenDrawerId] = useState(null);
+  const filteredProducts = useMemo(() => {
+    return products.filter(p => {
+      const isCategoryTab = categories.some(c => c.name === currentTab);
+      const matchesCategory = !isCategoryTab || p.material === currentTab;
+
+      const matchesSearch = !searchQuery || 
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      const vIndex = selectedVariants[p._id] || 0;
+      const activeVariant = p.variants?.[vIndex] || p.variants?.[0];
+      const matchesDesign = filterDesign === 'All' || (activeVariant && activeVariant.design === filterDesign);
+      const matchesColor = filterColor === 'All' || (activeVariant && activeVariant.color === filterColor);
+
+      return matchesCategory && matchesSearch && matchesDesign && matchesColor;
+    }).sort((a, b) => {
+      const vAIdx = selectedVariants[a._id] || 0;
+      const vBIdx = selectedVariants[b._id] || 0;
+      const priceA = a.variants?.[vAIdx]?.price || a.price || 0;
+      const priceB = b.variants?.[vBIdx]?.price || b.price || 0;
+
+      if (sortBy === 'low-high') return priceA - priceB;
+      if (sortBy === 'high-low') return priceB - priceA;
+      if (sortBy === 'newest') return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      return 0;
+    });
+  }, [products, searchQuery, filterDesign, filterColor, sortBy, currentTab, selectedVariants, categories]);
+
+  const toggleWishlist = (pId) => {
+    setWishlist(prev => prev.includes(pId) ? prev.filter(id => id !== pId) : [...prev, pId]);
+  };
 
   return (
-    <div className="space-y-16 pb-24 text-[#1a1a1a]">
+    <div className="bg-[#000103] text-[#f8fafc] min-h-screen relative overflow-x-hidden font-sans pb-24 pt-8 px-4 sm:px-8 lg:px-12 max-w-[1500px] mx-auto pointer-events-auto">
       
-      {/* EDITORIAL HERO BANNER */}
-      <div className="text-center max-w-2xl mx-auto space-y-4 pt-4 pb-2">
-        <span className="text-[10px] uppercase tracking-[0.35em] text-[#777]">The Trousseau Collection</span>
-        <h2 className="saree-brand-title-dark text-3xl md:text-5xl font-normal tracking-wide">Handwoven Heritage</h2>
-        <p className="text-xs text-[#666] tracking-wider leading-relaxed font-serif">
-          Each drape tells a story of ancient looms, pure zari threads, and generational craftsmanship.
-        </p>
-      </div>
+      {/* STATIC BACKGROUND GLOW ORBS */}
+      <div className="absolute top-1/4 left-10 w-[600px] h-[600px] bg-[#1c39bb]/15 rounded-full blur-[220px] pointer-events-none z-0" />
+      <div className="absolute top-[55%] right-10 w-[600px] h-[600px] bg-[#3b60e4]/15 rounded-full blur-[220px] pointer-events-none z-0" />
 
-      {/* MINIMALIST ATELIER FILTERS */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 border-y border-black/10 py-6">
-        <div className="w-full md:w-80">
+      {/* SEARCH & FILTERS PANEL */}
+      <div className="bg-[#02040c]/90 backdrop-blur-2xl p-5 sm:p-6 rounded-3xl flex flex-col md:flex-row gap-4 items-center justify-between relative z-10 border border-white/15 shadow-[0_15px_35px_rgba(0,0,0,0.5)] mb-12">
+        <div className="w-full md:w-1/3">
           <input 
             type="text" 
-            placeholder="Search by weave, name, or thread..." 
+            placeholder="Search drops..." 
             value={searchQuery} 
             onChange={(e) => setSearchQuery(e.target.value)} 
-            className="w-full bg-[#f4f1ea] border border-black/10 rounded-full px-5 py-3 text-xs uppercase tracking-widest focus:outline-none focus:border-black transition-all" 
+            className="w-full bg-[#02040c]/90 border border-white/20 px-4 py-3 rounded-2xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#3b60e4] transition-all shadow-inner"
           />
         </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto justify-end flex-wrap">
-          <select value={filterDesign} onChange={(e) => setFilterDesign(e.target.value)} className="bg-transparent border border-black/15 rounded-full px-5 py-2.5 text-[10px] uppercase tracking-widest text-[#444] focus:outline-none">
-            <option value="All">All Weaves</option>
-            {DESIGN_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <select value={filterDesign} onChange={(e) => setFilterDesign(e.target.value)} className="bg-[#02040c] border border-white/20 px-4 py-3 rounded-2xl text-xs text-white focus:outline-none focus:border-[#3b60e4] cursor-pointer">
+            <option value="All" className="bg-[#02040c]">All Designs</option>
+            <option value="Classic" className="bg-[#02040c]">Classic Motifs</option>
+            <option value="Kalamkari" className="bg-[#02040c]">Kalamkari</option>
           </select>
 
-          <select value={filterColor} onChange={(e) => setFilterColor(e.target.value)} className="bg-transparent border border-black/15 rounded-full px-5 py-2.5 text-[10px] uppercase tracking-widest text-[#444] focus:outline-none">
-            <option value="All">All Shades</option>
-            {COLOR_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+          <select value={filterColor} onChange={(e) => setFilterColor(e.target.value)} className="bg-[#02040c] border border-white/20 px-4 py-3 rounded-2xl text-xs text-white focus:outline-none focus:border-[#3b60e4] cursor-pointer">
+            <option value="All" className="bg-[#02040c]">All Colors</option>
+            <option value="Crimson" className="bg-[#02040c]">Crimson</option>
+            <option value="Ivory" className="bg-[#02040c]">Ivory</option>
           </select>
 
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="bg-transparent border border-black/15 rounded-full px-5 py-2.5 text-[10px] uppercase tracking-widest text-[#444] focus:outline-none">
-            <option value="default">Sort: Curated</option>
-            <option value="low-high">Price: Low to High</option>
-            <option value="high-low">Price: High to Low</option>
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="bg-[#02040c] border border-white/20 px-4 py-3 rounded-2xl text-xs text-white focus:outline-none focus:border-[#3b60e4] cursor-pointer">
+            <option value="default" className="bg-[#02040c]">Sort: Featured</option>
+            <option value="low-high" className="bg-[#02040c]">Price: Low to High</option>
+            <option value="high-low" className="bg-[#02040c]">Price: High to Low</option>
           </select>
         </div>
       </div>
 
-      {/* LUXURY EDITORIAL GRID */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-20 items-start">
-        {products.map(product => {
-          const vIndex = selectedVariants[product._id] ?? 0;
-          const variant = product.variants?.[vIndex] || product.variants?.[0] || {};
-          
-          const images = (variant.images && variant.images.length > 0) ? variant.images : (product.images || ['https://via.placeholder.com/400']);
-          const primaryImage = images[0] || '';
-          const secondaryImage = images[1] || primaryImage;
-          const variantVideo = variant.videoUrl || '';
-          const isHovered = hoveredCard === product._id;
-          const isDrawerOpen = openDrawerId === product._id;
+      {/* PRODUCT GRID - 4 WIDER CARDS WITH GLASSMORPHISM */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 relative z-10" style={{ perspective: 1400 }}>
+        {filteredProducts.length === 0 ? (
+          <div className="col-span-full text-center py-20 text-gray-400 font-serif text-sm">
+            No sarees found matching this category curation.
+          </div>
+        ) : (
+          filteredProducts.map((p, idx) => {
+            const vIndex = selectedVariants[p._id] || 0;
+            const variant = p.variants?.[vIndex] || p.variants?.[0] || {};
+            const currentImages = variant.images?.length > 0 ? variant.images : (p.images || ['https://via.placeholder.com/300']);
+            const isWishlisted = wishlist.includes(p._id);
 
-          const handleWhatsAppInquiry = (e) => {
-            e.stopPropagation();
-            const msg = `Hello Bhairavi Threads! I wish to enquire about this creation:\n\n*${product.name}*\nMaterial: ${product.material}\nVariant: ${variant.color} - ${variant.design}\nPrice: ₹${variant.price}\nImage: ${primaryImage}`;
-            window.open(`https://wa.me/${MY_WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
-          };
-
-          return (
-            <div 
-              key={product._id} 
-              className="group flex flex-col justify-between h-full space-y-4 cursor-pointer"
-              onMouseEnter={() => setHoveredCard(product._id)}
-              onMouseLeave={() => setHoveredCard(null)}
-            >
-              {/* Cinematic Visual Frame with Auto-Hover Video / Zoom */}
-              <div 
-                className="relative w-full aspect-[3/4] overflow-hidden rounded-2xl bg-[#f4f1ea] shadow-sm transition-all duration-700 group-hover:shadow-xl"
-                onClick={() => setDetailProduct(product)}
+            return (
+              <motion.div 
+                key={p._id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: idx * 0.03 }}
+                whileHover={{ 
+                  scale: 1.02, 
+                  y: -6, 
+                  rotateX: 2, 
+                  rotateY: -2, 
+                  transition: { duration: 0.2, ease: "easeOut" } 
+                }}
+                style={{ 
+                  backfaceVisibility: 'hidden', 
+                  transformStyle: 'preserve-3d', 
+                  willChange: 'transform' 
+                }}
+                onClick={() => setDetailProduct(p)}
+                className="group bg-white/[0.03] backdrop-blur-xl rounded-3xl p-5 border border-white/10 hover:border-[#3b60e4]/80 flex flex-col justify-between cursor-pointer shadow-[0_20px_50px_rgba(0,0,0,0.8)]"
               >
-                {/* Video plays on hover if available */}
-                {variantVideo && isHovered ? (
-                  <video 
-                    src={variantVideo} 
-                    autoPlay 
-                    muted 
-                    loop 
-                    playsInline 
-                    className="w-full h-full object-cover transition-transform duration-1000 scale-105"
-                  />
-                ) : (
-                  <img 
-                    src={isHovered ? secondaryImage : primaryImage} 
-                    alt={product.name} 
-                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                  />
-                )}
-
-                {/* Floating Wishlist Heart */}
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const exists = wishlist.includes(product._id);
-                    setWishlist(exists ? wishlist.filter(id => id !== product._id) : [...wishlist, product._id]);
-                  }}
-                  className="absolute top-4 right-4 z-20 text-sm transition-transform hover:scale-125 bg-white/90 backdrop-blur-md w-9 h-9 rounded-full flex items-center justify-center shadow-md"
-                >
-                  {wishlist.includes(product._id) ? '♥' : '♡'}
-                </button>
-
-                {/* Craftsmanship Badge */}
-                <div className="absolute bottom-4 left-4 z-10 bg-black/40 backdrop-blur-md text-[#fbf9f5] px-3 py-1 rounded-full text-[9px] uppercase tracking-[0.2em]">
-                  100% Handloom
-                </div>
-              </div>
-
-              {/* Title & Price Information */}
-              <div className="space-y-1 text-center" onClick={() => setDetailProduct(product)}>
-                <span className="text-[9px] uppercase tracking-[0.3em] text-[#888] block">{product.material} Weave</span>
-                <h3 className="saree-brand-title-dark text-base font-normal tracking-wide hover:opacity-75 truncate px-2">
-                  {product.name}
-                </h3>
-                <p className="font-serif text-base font-medium tracking-wide text-black">₹{variant.price || 'N/A'}</p>
-              </div>
-
-              {/* Curated Action & Options Drawer */}
-              <div className="space-y-2 pt-1">
-                <button 
-                  onClick={() => addToCart(product)}
-                  disabled={variant.stockStatus === 'Out of Stock'}
-                  className={`w-full py-3 text-[10px] uppercase tracking-[0.25em] rounded-xl transition-all font-medium ${variant.stockStatus === 'Out of Stock' ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#111111] text-[#fbf9f5] hover:bg-black shadow-sm'}`}
-                >
-                  {variant.stockStatus === 'Out of Stock' ? 'Archived / Sold Out' : 'Curate to Trunk'}
-                </button>
-
-                {/* Atelier Quick Drawer Toggle */}
                 <div>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpenDrawerId(isDrawerOpen ? null : product._id);
-                    }}
-                    className="w-full py-2 text-[9px] uppercase tracking-[0.2em] text-[#555] bg-[#f4f1ea] border border-black/10 rounded-xl hover:bg-[#ebe6dc] transition-all flex items-center justify-center gap-1.5"
-                  >
-                    <span>{isDrawerOpen ? 'Close Atelier Options ▲' : 'Shades & Enquire ▼'}</span>
-                  </button>
+                  {/* Wider Image Container */}
+                  <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-black mb-4 shadow-2xl">
+                    <img src={currentImages[0]} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-95" />
+                    
+                    <button onClick={(e) => { e.stopPropagation(); toggleWishlist(p._id); }} className="absolute top-3.5 right-3.5 w-9 h-9 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white text-sm border border-white/20 hover:bg-[#1c39bb] transition-colors cursor-pointer shadow-lg">
+                      {isWishlisted ? '♥' : '♡'}
+                    </button>
 
-                  {/* Collapsible Atelier Drawer */}
-                  {isDrawerOpen && (
-                    <div className="mt-2 p-3.5 bg-[#f4f1ea] rounded-xl border border-black/15 space-y-3 animate-fadeIn text-left">
-                      {product.variants && product.variants.length > 0 && (
-                        <div>
-                          <span className="text-[8px] uppercase tracking-widest text-[#777] block mb-1.5">Color Shades:</span>
-                          <div className="flex gap-1.5 flex-wrap">
-                            {product.variants.map((v, idx) => (
-                              <button 
-                                key={idx}
-                                onClick={(e) => { e.stopPropagation(); handleVariantChange(product._id, idx); }}
-                                className={`text-[9px] uppercase tracking-wider px-2.5 py-1 rounded-lg transition-all ${vIndex === idx ? 'bg-black text-white font-bold shadow-sm' : 'bg-white text-[#444] border border-black/10 hover:border-black'}`}
-                              >
-                                {v.color}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                    {variant.stockStatus === 'Out of Stock' && (
+                      <div className="absolute inset-x-0 bottom-0 bg-black/90 text-red-400 text-[9px] uppercase tracking-widest text-center py-2 font-bold backdrop-blur-md border-t border-red-500/20">
+                        Sold Out
+                      </div>
+                    )}
+                  </div>
 
-                      <button 
-                        onClick={handleWhatsAppInquiry}
-                        className="w-full py-2.5 text-[9px] uppercase tracking-[0.2em] rounded-xl bg-[#2fae60] text-white font-medium hover:bg-[#258d50] transition-all flex items-center justify-center gap-1.5 shadow-sm"
-                      >
-                        💬 Private WhatsApp Enquire
-                      </button>
+                  <span className="text-[9px] uppercase font-mono text-blue-300 tracking-widest block mb-1">{p.material}</span>
+                  <h3 className="font-serif text-sm sm:text-base text-white font-normal line-clamp-1">{p.name}</h3>
+                </div>
+
+                <div className="pt-3.5 flex items-center justify-between mt-3.5 border-t border-white/10">
+                  <span className="font-mono text-sm text-gray-100 font-semibold">₹{variant.price || 0}</span>
+                  
+                  {p.variants && p.variants.length > 1 && (
+                    <div className="flex items-center gap-2">
+                      {p.variants.map((v, i) => (
+                        <span 
+                          key={i} 
+                          onClick={(e) => { e.stopPropagation(); handleVariantChange(p._id, i); }}
+                          className={`w-3 h-3 rounded-full border border-white/35 shadow-md cursor-pointer ${vIndex === i ? 'ring-2 ring-blue-400' : ''}`} 
+                          style={{ backgroundColor: v.color?.toLowerCase() || '#1c39bb' }} 
+                        />
+                      ))}
                     </div>
                   )}
                 </div>
-              </div>
 
-            </div>
-          );
-        })}
+                {/* Glassmorphic Add to Bag Button */}
+                <button 
+                  onClick={(e) => { e.stopPropagation(); addToCart(p); }}
+                  disabled={variant.stockStatus === 'Out of Stock'}
+                  className={`w-full mt-3.5 py-3 text-[10px] uppercase tracking-[0.2em] rounded-xl font-medium transition-all shadow-xl backdrop-blur-md ${variant.stockStatus === 'Out of Stock' ? 'bg-white/5 text-gray-500 cursor-not-allowed border border-white/5' : 'bg-[#1c39bb]/80 hover:bg-[#3b60e4] text-white cursor-pointer border border-blue-400/50 shadow-[0_0_20px_rgba(28,57,187,0.4)]'}`}
+                >
+                  {variant.stockStatus === 'Out of Stock' ? 'Sold Out' : 'Add to Bag'}
+                </button>
+              </motion.div>
+            );
+          })
+        )}
       </div>
-
     </div>
   );
 }

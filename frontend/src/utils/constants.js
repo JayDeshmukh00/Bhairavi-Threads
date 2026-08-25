@@ -1,3 +1,6 @@
+export const ADMIN_EMAILS = ["admin@bhairavithreads.com", "jay@bhairavithreads.com"]; 
+export const ADMIN_PHONES = ["9657127253"]; // Configured Admin Phone Number
+
 export const assets = {
   heroVideo: "https://res.cloudinary.com/dp3njnwvf/video/upload/v1787301733/bhairavi-pallu-reveal_-_Copy_wdmpkw.mp4",
   modelVideo1: "https://res.cloudinary.com/dp3njnwvf/video/upload/v1787304108/VID-20260821-WA0018_lvmmds.mp4",
@@ -22,30 +25,45 @@ export const collectionsList = [
   { id: "06", title: "EMBROIDERY", desc: "Intricate needlework and rich zari embellishments echoing royal heritage.", image: assets.embroidery },
 ];
 
-export const ui = {
-  input: "bg-white/90 backdrop-blur border-b border-black/10 focus:border-black outline-none text-[#222] placeholder-[#888] rounded-none p-3 text-sm transition-colors",
-  select: "bg-white/90 backdrop-blur border-b border-black/10 focus:border-black outline-none text-[#222] rounded-none p-3 text-sm transition-colors",
-  primaryBtn: "bg-[#1a1a1a] hover:bg-[#333] text-white font-medium rounded-full transition-all shadow-md hover:shadow-lg disabled:bg-[#ccc] disabled:cursor-not-allowed",
-  ghostBtn: "bg-transparent hover:bg-black/5 text-[#222] border border-black/15 font-medium rounded-full transition-all backdrop-blur",
-};
+export const INITIAL_CATEGORIES = [
+  { name: 'Kalamkari', designs: ['Classic Motifs', 'Earth-Toned Narrative', 'Temple Border'] },
+  { name: 'Cotton', designs: ['Plain Weave', 'Handblock Printed', 'Checks & Stripes'] },
+  { name: 'Organza', designs: ['Tissue Sheer', 'Floral Embroidered', 'Metallic Trim'] },
+  { name: 'Raga Tissue', designs: ['Pure Gold Zari', 'Silver Shimmer', 'Antique Brocade'] },
+  { name: 'Embroidery', designs: ['Zardosi Work', 'Aari Handwork', 'Resham Threadwork'] },
+  { name: 'Hand Painted', designs: ['Pichwai Flora', 'Madhubani Art', 'Abstract Silk Canvas'] }
+];
 
-export const MY_WHATSAPP_NUMBER = "9657127253";
-export const CATEGORIES = ['Kalamkari', 'Cotton', 'Organza', 'Raga Tissue', 'Embroidery', 'Hand Painted'];
 export const COLOR_OPTIONS = [
-  'Crimson',
-  'Gold',
-  'Emerald',
-  'Ivory',
-  'Indigo',
-  'Midnight Black',
-  'Blush Pink',
-  'Royal Blue'
+  'Crimson', 'Gold', 'Emerald', 'Ivory', 'Indigo', 'Midnight Black', 'Blush Pink', 'Royal Blue', 'Antique Mustard'
 ];
 
 export const DESIGN_OPTIONS = [
-  'Classic',
-  'Contemporary',
-  'Traditional Motifs',
-  'Geometric Brocade',
-  'Floral Hand-Painted'
+  'Classic Motifs', 
+  'Earth-Toned Narrative', 
+  'Temple Border', 
+  'Plain Weave', 
+  'Handblock Printed', 
+  'Checks & Stripes', 
+  'Tissue Sheer', 
+  'Floral Embroidered', 
+  'Metallic Trim', 
+  'Pure Gold Zari', 
+  'Silver Shimmer', 
+  'Antique Brocade', 
+  'Zardosi Work', 
+  'Aari Handwork', 
+  'Resham Threadwork', 
+  'Pichwai Flora', 
+  'Madhubani Art', 
+  'Abstract Silk Canvas'
 ];
+
+export const MY_WHATSAPP_NUMBER = "9657127253";
+
+export const ui = {
+  input: "w-full bg-[#f4f1ea] border border-black/15 rounded-xl px-4 py-3 text-xs tracking-widest text-[#1a1a1a] placeholder:text-[#888] focus:outline-none focus:border-black transition-all",
+  select: "w-full bg-[#f4f1ea] border border-black/15 rounded-xl px-4 py-3 text-xs uppercase tracking-widest text-[#1a1a1a] focus:outline-none focus:border-black transition-all cursor-pointer",
+  primaryBtn: "bg-[#111111] text-[#fbf9f5] py-3.5 text-xs uppercase tracking-[0.25em] rounded-xl hover:bg-black transition-all shadow-md font-medium",
+  ghostBtn: "bg-transparent border border-black/20 text-[#1a1a1a] py-3.5 text-xs uppercase tracking-[0.25em] rounded-xl hover:bg-black/5 transition-all"
+};
