@@ -281,7 +281,7 @@ export default function LandingView({ setCurrentTab, token, setIsLoginView, setS
             className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0"
           >
             <video 
-              src="https://res.cloudinary.com/dp3njnwvf/video/upload/v1787750108/Models_modeling_silk_sarees_202608261842_v90zej.mp4" 
+              src="https://res.cloudinary.com/dp3njnwvf/video/upload/v1787743132/raga_vr3wku.mp4" 
               autoPlay 
               muted 
               loop 
