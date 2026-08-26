@@ -1,21 +1,24 @@
 @import "tailwindcss";
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400..700;1,400..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..700;1,400..700&display=swap');
 
 :root {
-  --bg-obsidian: #000103;
-  --accent-blue: #1c39bb;
-  --accent-neon: #3b60e4;
-  --font-serif: 'Cinzel', Georgia, serif;
-  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --bg-editorial: #fcfbf9;
+  --bg-charcoal: #121212;
+  --bg-obsidian: #0a0a0a;
+  --text-main: #111111;
+  --text-muted: #71717a;
+  --border-subtle: rgba(0, 0, 0, 0.12);
+  --border-light: rgba(255, 255, 255, 0.15);
+  --accent-gold: #d4af37;
 }
 
 html, body, #root {
   min-height: 100vh;
-  background-color: #000103 !important;
-  color: #f8fafc !important;
-  font-family: var(--font-sans);
+  background-color: var(--bg-editorial) !important;
+  color: var(--text-main) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   overflow-x: hidden;
   scroll-behavior: smooth;
   margin: 0;
@@ -26,43 +29,29 @@ html, body, #root {
   box-sizing: border-box;
 }
 
+/* Custom Scrollbar for Editorial Dark/Light Harmony */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+::-webkit-scrollbar-thumb {
+  background: #333333;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #555555;
+}
+
 button, a, input, select, textarea { 
   cursor: pointer; 
 }
-input, select, textarea { 
-  cursor: text; 
-}
 
-img, video {
-  display: block;
-  max-width: 100%;
+/* Typography Helpers */
+.font-serif {
+  font-family: 'Playfair Display', serif;
 }
-
-/* Hide scrollbar utility */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* Carousel Indicators */
-.luxury-carousel .control-dots {
-  bottom: 12px;
-}
-
-.luxury-carousel .control-dots .dot {
-  background: #ffffff;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-  opacity: 0.4;
-  width: 8px;
-  height: 8px;
-  transition: opacity 0.3s ease;
-}
-
-.luxury-carousel .control-dots .dot.selected {
-  opacity: 1;
-  background: var(--accent-neon);
-  box-shadow: 0 0 10px rgba(59,96,228,0.5);
+.font-sans {
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }

@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db');
+const Order = require('./models/Order'); // Ensure your Order model is imported for CSV export
 
 // Import Routes
 const authRoutes = require('./routes/authRoutes');
@@ -53,6 +54,23 @@ if (authController && typeof authController.forgotPassword === 'function') {
 if (authController && typeof authController.resetPassword === 'function') {
   app.post('/api/auth/reset-password', authController.resetPassword);
 }
+
+// Admin Download Orders CSV Endpoint
+app.get('/api/admin/orders/export-csv', async (req, res) => {
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    let csv = 'Order ID,Customer Email,Total Amount,Status,Date\n';
+    orders.forEach(o => {
+      csv += `"${o._id}","${o.customerEmail}","${o.totalAmount}","${o.status || 'Pending'}","${o.createdAt}"\n`;
+    });
+    res.header('Content-Type', 'text/csv');
+    res.attachment('bhairavi_orders_export.csv');
+    return res.send(csv);
+  } catch (err) {
+    console.error("CSV Export Error:", err);
+    return res.status(500).json({ message: "Failed to generate CSV export." });
+  }
+});
 
 // Root route check for deployment status
 app.get('/', (req, res) => {

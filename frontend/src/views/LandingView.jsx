@@ -1,6 +1,5 @@
 import { useState, useRef } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { assets } from '../utils/constants';
 
 export default function LandingView({ setCurrentTab, token, setIsLoginView, setShowAuth }) {
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -9,6 +8,7 @@ export default function LandingView({ setCurrentTab, token, setIsLoginView, setS
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [activeStorySlide, setActiveStorySlide] = useState(0);
 
   const audioRef = useRef(null);
 
@@ -38,61 +38,161 @@ export default function LandingView({ setCurrentTab, token, setIsLoginView, setS
     offset: ["start start", "end end"]
   });
 
-  const bgModelY = useTransform(scrollYProgress, [0, 1], ["0%", "20%"]);
-  const floatingY = useTransform(scrollYProgress, [0, 1], [0, -40]);
+  const bgVideoY = useTransform(scrollYProgress, [0, 0.3], ["0%", "20%"]);
 
-  // Authenticated handloom saree imagery and textures
+  // 4 Full-Width Runway Videos with dedicated poster thumbnails and independent loading states
+  const cinematicVideos = [
+    {
+      id: "01",
+      title: "RAGA TISSUE ELEGANCE",
+      subtitle: "Pure Gold & Silver Zari Weaves",
+      desc: "A mesmerizing showcase of lustrous tissue drapes that shimmer gracefully under ambient light with timeless grace.",
+      videoUrl: "https://res.cloudinary.com/dp3njnwvf/video/upload/v1787743132/raga_vr3wku.mp4",
+      posterUrl: "https://res.cloudinary.com/dp3njnwvf/image/upload/v1787745923/Fashion_model_in_saree_202608261733_kcewke.jpg"
+    },
+    {
+      id: "02",
+      title: "HAND-PAINTED SILK ARTISTRY",
+      subtitle: "Masterpieces Crafted by Artisans",
+      desc: "Exquisite hand-painted florals and cultural motifs brought to life on pure mulberry silk canvases.",
+      videoUrl: "https://res.cloudinary.com/dp3njnwvf/video/upload/v1787743131/handpainted_nhqimr.mp4",
+      posterUrl: "https://res.cloudinary.com/dp3njnwvf/image/upload/v1787745924/Model_wearing_lotus_saree_202608261733_hj5tzp.jpg"
+    },
+    {
+      id: "03",
+      title: "ETHEREAL ORGANZA GRACE",
+      subtitle: "Lightweight & Flowing Drapes",
+      desc: "Delicate organza layers that float effortlessly around you, combining traditional ease with refined elegance.",
+      videoUrl: "https://res.cloudinary.com/dp3njnwvf/video/upload/v1787743131/organza_rqjmfi.mp4",
+      posterUrl: "https://res.cloudinary.com/dp3njnwvf/image/upload/v1787745924/Model_wearing_translucent_organz__202608261733_kl4khi.jpg"
+    },
+    {
+      id: "04",
+      title: "HERITAGE KALAMKARI",
+      subtitle: "Traditional Stories on Fine Silk",
+      desc: "Intricate pen-crafted heritage designs celebrating timeless Indian storytelling and unmatched craftsmanship.",
+      videoUrl: "https://res.cloudinary.com/dp3njnwvf/video/upload/v1787743133/kalamkari_srd4ee.mp4",
+      posterUrl: "https://res.cloudinary.com/dp3njnwvf/image/upload/v1787746490/Model_wearing_Kalamkari_print_saree_202608261741_nhddeo.jpg"
+    }
+  ];
+
   const collectionsList = [
     { 
       id: "01", 
-      title: "Kalamkari", 
-      desc: "Hand-painted ancient narratives using organic vegetable dyes on pure breathable silk.", 
-      longStory: "Each motif is hand-drawn using a bamboo pen dipped in fermented jaggery and iron rust, taking up to 21 days per meter.",
-      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSH06vKxqToW7HNP2iuNXnjuzCIPwVCozlOmPRG5_577A&s=10" 
+      title: "Pure Silk Radiance", 
+      desc: "Luxurious pure silk drapes designed for grace and celebratory elegance.", 
+      longStory: "A stunning celebration of authentic Indian silk weaving, crafted to make every occasion feel truly unforgettable.",
+      image: "https://res.cloudinary.com/dp3njnwvf/image/upload/v1787746490/Model_wearing_silk_saree_202608261743_cafdgm.jpg" 
     },
     { 
       id: "02", 
-      title: "Organza", 
-      desc: "Ethereal translucent drapes with delicate shimmering gold zari borders.", 
-      longStory: "Woven with sheer glass-like crispness that floats around the wearer like morning mist over sacred riverbanks.",
-      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRiZ9jMv5QrpSuc3BSVn5XcmvFFI0KPIkPvsJl2VSIUlOMjtkkKALq-YZb9&s=10" 
+      title: "Obsidian Weave Edition", 
+      desc: "Deep nightfall silks engineered with subtle matte threadwork.", 
+      longStory: "Constructed for high-impact traditional gatherings and graceful evening occasions.",
+      image: "https://res.cloudinary.com/dp3njnwvf/image/upload/v1787745924/Model_wearing_silk_saree_202608261733_lft8z8.jpg" 
     },
     { 
       id: "03", 
-      title: "Raga Tissue", 
-      desc: "Lustrous gold and silver tissue weaves fit for royal celebrations.", 
-      longStory: "A harmonious blend of metallic warp and fine silk weft that catches fire under moonlight and chandelier glow.",
-      image: "https://houseofaaradhya.com/cdn/shop/files/DSC00014.jpg?v=1767974106" 
+      title: "Structured Jamdani", 
+      desc: "Tactile geometric patterns woven directly into sheer foundational threads.", 
+      longStory: "A beautiful fusion of heritage handloom techniques created for graceful everyday elegance.",
+      image: "https://res.cloudinary.com/dp3njnwvf/image/upload/v1787745923/Model_posing_in_Jamdani_saree_202608261733_cclanu.jpg" 
     },
     { 
       id: "04", 
-      title: "Cotton", 
-      desc: "Luxuriously soft handspun mulmul cottons crafted for effortless daily grace.", 
-      longStory: "Breathable heritage yarn spun by veteran women artisans, offering unmatched comfort that softens with every wash.",
-      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQupZV7rx0KRIaJiK-QaruwoAO1wqB90zXz_gVPEVwrHA&s=10" 
+      title: "Architectural Linen", 
+      desc: "Breathable handspun linen structured into comfortable, graceful silhouettes.", 
+      longStory: "Pure, soft, and delightfully comfortable—designed for effortless daily traditional wear.",
+      image: "https://res.cloudinary.com/dp3njnwvf/image/upload/v1787745923/Model_posing_in_linen_saree_202608261733_kjjyxu.jpg" 
     },
     { 
       id: "05", 
-      title: "Embroidery", 
-      desc: "Intricate needle threadwork and zardozi detailing by master craftsmen.", 
-      longStory: "Countless hours of painstaking hand embroidery turning plain silk canvases into opulent heirloom treasures.",
-      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTn0U6svtPAEofOMIWHSBEbp9f8K2pUcLzlVVh5ryD_vw&s=10" 
+      title: "Classic Tissue Splendor", 
+      desc: "Gleaming tissue weaves reflecting rich cultural opulence and royal heritage.", 
+      longStory: "An exquisite creation capturing the golden glow of traditional Indian celebrations.",
+      image: "https://res.cloudinary.com/dp3njnwvf/image/upload/v1787745923/Fashion_model_in_saree_202608261733_kcewke.jpg" 
     },
     { 
       id: "06", 
-      title: "Hand Painted", 
-      desc: "One-of-a-kind wearable art painted directly onto fine silk by master artists.", 
-      longStory: "No stencils, no prints—pure imagination transferred straight from the artisan's brush to fabric.",
-      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt6iSubulRTfFexH7sQNlbAxT3HbPXE9toZlMa0PjHhg&s=10" 
+      title: "Artisan Brushstroke Silk", 
+      desc: "Artistic expressionist motifs painted directly onto rich silk canvases.", 
+      longStory: "Wearable art born from the creative soul of traditional Indian craft studios.",
+      image: "https://res.cloudinary.com/dp3njnwvf/image/upload/v1787745923/Model_posing_against_concrete_wall_202608261733_ekfbmp.jpg" 
+    },
+    { 
+      id: "07", 
+      title: "Pure Alabaster Weave", 
+      desc: "Graceful ivory silhouettes crafted for serene family gatherings.", 
+      longStory: "Timeless traditional beauty expressed through pure fabrics and flawless drapes.",
+      image: "https://res.cloudinary.com/dp3njnwvf/image/upload/v1787745924/Model_posing_in_white_saree_202608261733_phxsqu.jpg" 
     }
   ];
 
   const newDropsProducts = [
-    { id: 1, category: "Kalamkari", title: "Royal Purple Kalamkari", price: "₹8,950", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSH06vKxqToW7HNP2iuNXnjuzCIPwVCozlOmPRG5_577A&s=10", colors: ["#1c39bb", "#3b60e4", "#0f172a"] },
-    { id: 2, category: "Organza", title: "Lavender Organza Tissue", price: "₹7,250", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRiZ9jMv5QrpSuc3BSVn5XcmvFFI0KPIkPvsJl2VSIUlOMjtkkKALq-YZb9&s=10", colors: ["#93c5fd", "#3b82f6", "#1e3a8a"] },
-    { id: 3, category: "Raga Tissue", title: "Ivory Gold Heirloom", price: "₹10,500", img: "https://houseofaaradhya.com/cdn/shop/files/DSC00014.jpg?v=1767974106", colors: ["#fef08a", "#ca8a04", "#1c39bb"] },
-    { id: 4, category: "Cotton", title: "Peacock Green Cotton", price: "₹6,150", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQupZV7rx0KRIaJiK-QaruwoAO1wqB90zXz_gVPEVwrHA&s=10", colors: ["#065f46", "#1c39bb", "#047857"] },
-    { id: 5, category: "Hand Painted", title: "Hand Painted Blush Silk", price: "₹9,850", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt6iSubulRTfFexH7sQNlbAxT3HbPXE9toZlMa0PjHhg&s=10", colors: ["#60a5fa", "#2563eb", "#1e40af"] }
+    { 
+      id: 1, 
+      category: "Hand Painted", 
+      title: "Hand-Painted Lotus Masterpiece", 
+      price: "₹13,850", 
+      img: "https://res.cloudinary.com/dp3njnwvf/image/upload/v1787745924/Model_wearing_lotus_saree_202608261733_hj5tzp.jpg", 
+      colors: ["#111111", "#d4af37", "#3b82f6"] 
+    },
+    { 
+      id: 2, 
+      category: "Organza", 
+      title: "Translucent Smoke Organza", 
+      price: "₹9,250", 
+      img: "https://res.cloudinary.com/dp3njnwvf/image/upload/v1787745924/Model_wearing_translucent_organz__202608261733_kl4khi.jpg", 
+      colors: ["#e5e7eb", "#9ca3af", "#4b5563"] 
+    },
+    { 
+      id: 3, 
+      category: "Kalamkari", 
+      title: "Traditional Kalamkari Print", 
+      price: "₹12,950", 
+      img: "https://res.cloudinary.com/dp3njnwvf/image/upload/v1787746490/Model_wearing_Kalamkari_print_saree_202608261741_nhddeo.jpg", 
+      colors: ["#111111", "#333333", "#8b4513"] 
+    },
+    { 
+      id: 4, 
+      category: "Cotton", 
+      title: "Pure Handspun Cotton", 
+      price: "₹7,150", 
+      img: "https://res.cloudinary.com/dp3njnwvf/image/upload/v1787745923/Model_posing_in_cotton_saree_202608261733_jamku8.jpg", 
+      colors: ["#f3f4f6", "#d1d5db", "#9ca3af"] 
+    },
+    { 
+      id: 5, 
+      category: "Cyber Tissue", 
+      title: "Lustrous Tissue Drape", 
+      price: "₹14,500", 
+      img: "https://res.cloudinary.com/dp3njnwvf/image/upload/v1787745923/Fashion_model_in_saree_202608261733_kcewke.jpg", 
+      colors: ["#e2e8f0", "#d4af37", "#334155"] 
+    },
+    { 
+      id: 6, 
+      category: "Hand Painted", 
+      title: "Artisan Brushstroke Silk", 
+      price: "₹11,850", 
+      img: "https://res.cloudinary.com/dp3njnwvf/image/upload/v1787745923/Model_posing_against_concrete_wall_202608261733_ekfbmp.jpg", 
+      colors: ["#000000", "#71717a", "#d4af37"] 
+    },
+    { 
+      id: 7, 
+      category: "Organza", 
+      title: "Ethereal Chiffon Drape", 
+      price: "₹10,400", 
+      img: "https://res.cloudinary.com/dp3njnwvf/image/upload/v1787745924/Model_wearing_chiffon_saree_202608261733_xjtvlg.jpg", 
+      colors: ["#cbd5e1", "#64748b", "#0f172a"] 
+    },
+    { 
+      id: 8, 
+      category: "Kalamkari", 
+      title: "Heritage Silk Weave", 
+      price: "₹15,200", 
+      img: "https://res.cloudinary.com/dp3njnwvf/image/upload/v1787745924/Model_posing_in_silk_saree_202608261733_eed21f.jpg", 
+      colors: ["#1c1917", "#44403c", "#d4af37"] 
+    }
   ];
 
   const filteredProducts = selectedCategory === 'All' 
@@ -111,509 +211,413 @@ export default function LandingView({ setCurrentTab, token, setIsLoginView, setS
   };
 
   return (
-    <div ref={containerRef} className="btx-page bg-[#000103] text-[#f8fafc] min-h-screen overflow-x-hidden relative selection:bg-[#1c39bb] selection:text-white font-sans pointer-events-auto">
+    <div ref={containerRef} className="bg-[#fcfbf9] text-[#111111] min-h-screen overflow-x-hidden relative selection:bg-[#111111] selection:text-white font-sans pointer-events-auto">
       
       {/* BACKGROUND AUDIO */}
-      <audio 
-        ref={audioRef} 
-        loop 
-        src="/music/music.mp3" 
-      />
+      <audio ref={audioRef} loop src="/music/music.mp3" />
 
-      {/* ULTRA-MODERN CINEMATIC PARALLAX BACKGROUND */}
-      <div className="absolute inset-0 h-[120vh] w-full overflow-hidden pointer-events-none z-0">
-        <motion.div 
-          animate={{ scale: [1, 1.05, 1], rotate: [0, 0.5, 0] }} 
-          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-          style={{ y: bgModelY }} 
-          className="w-full h-full relative"
-        >
-          <img 
-            src="http://chowkhat.com/cdn/shop/files/Untitled_Session0767.jpg?v=1756967605&width=2048" 
-            alt="Hand-painted saree background" 
-            className="w-full h-full object-cover object-center filter brightness-[0.5] contrast-[1.2]"
-          />
-        </motion.div>
-        <div className="absolute inset-0 bg-gradient-to-b from-[#000103]/40 via-[#000103]/85 to-[#000103]" />
-      </div>
-
-      {/* Dynamic Immersive Glow Orbs */}
-      <motion.div 
-        animate={{ x: [0, 80, 0], y: [0, -40, 0], scale: [1, 1.2, 1] }}
-        transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute top-1/4 left-10 w-[700px] h-[700px] bg-[#1c39bb]/25 rounded-full blur-[250px] pointer-events-none z-0" 
-      />
-      <motion.div 
-        animate={{ x: [0, -70, 0], y: [0, 60, 0], scale: [1, 1.25, 1] }}
-        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute top-[55%] right-10 w-[700px] h-[700px] bg-[#3b60e4]/25 rounded-full blur-[250px] pointer-events-none z-0" 
-      />
-
-      {/* ULTRA-MODERN FLOATING NAVIGATION BAR */}
-      <div className="fixed top-4 inset-x-0 z-50 px-4 sm:px-8 max-w-[1350px] mx-auto pointer-events-auto">
-        <motion.header 
-          initial={{ y: -25, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full bg-[#02040c]/85 backdrop-blur-2xl px-6 py-3.5 flex justify-between items-center rounded-full border border-white/15 shadow-[0_15px_35px_rgba(0,0,0,0.5)]"
-        >
-          <button className="focus:outline-none text-left group flex items-center cursor-pointer bg-transparent border-none" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-            <span className="text-sm tracking-[0.2em] font-serif text-white font-normal italic">
-              Bhairavi<span className="text-[#3b60e4] font-serif">.threads</span>
-            </span>
-          </button>
+      {/* HEADER */}
+      <header className="absolute top-0 inset-x-0 z-50 bg-gradient-to-b from-black/60 via-black/20 to-transparent px-6 lg:px-16 py-6 transition-all">
+        <div className="max-w-[1800px] mx-auto flex items-center justify-between text-white">
           
-          <nav className="hidden md:flex items-center gap-7 text-[11px] tracking-[0.2em] uppercase text-gray-300 font-light">
-            <button onClick={() => setCurrentTab("store")} className="text-white hover:text-[#3b60e4] transition-colors cursor-pointer bg-transparent border-none">Store</button>
-            <a href="#new-drops" className="hover:text-white transition-colors">New Drops</a>
-            <a href="#btv-story" className="hover:text-white transition-colors">Story</a>
-            <a href="#btv-film" className="hover:text-white transition-colors">Film</a>
-            <a href="#btv-collections" className="hover:text-white transition-colors">Collections</a>
-            <button onClick={() => setIsContactOpen(true)} className="hover:text-white transition-colors bg-transparent border-none cursor-pointer uppercase tracking-[0.2em] text-[11px] text-gray-300">Contact</button>
+          <div className="cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
+            <h1 className="font-serif text-lg sm:text-2xl tracking-[0.25em] uppercase font-light text-white drop-shadow-md">
+              Bhairavi Threads
+            </h1>
+            <span className="text-[7px] uppercase tracking-[0.4em] text-gray-300 block font-mono">
+              Varanasi · Pune · Handloom
+            </span>
+          </div>
+
+          <nav className="hidden lg:flex items-center gap-8 text-[10px] uppercase tracking-[0.25em] font-medium text-gray-200">
+            <button onClick={() => setCurrentTab("store")} className="hover:text-white transition-colors cursor-pointer bg-transparent border-none text-gray-200 drop-shadow">Store</button>
+            <a href="#new-drops" className="hover:text-white transition-colors drop-shadow">Collections</a>
+            <a href="#btv-cinematic" className="hover:text-white transition-colors drop-shadow">Runway</a>
+            <a href="#btv-story" className="hover:text-white transition-colors drop-shadow">Our Story</a>
+            <a href="#btv-collections" className="hover:text-white transition-colors drop-shadow">Exclusives</a>
           </nav>
 
-          <div className="flex items-center gap-3">
-            <motion.button 
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+          <div className="flex items-center gap-5">
+            <button 
               onClick={toggleAudio}
-              className={`relative flex items-center gap-2.5 px-3.5 py-1.5 rounded-full border text-[10px] uppercase tracking-wider transition-all cursor-pointer backdrop-blur-md ${isPlayingAudio ? 'bg-[#1c39bb]/50 border-blue-400 text-white shadow-[0_0_20px_rgba(28,57,187,0.6)]' : 'bg-white/5 border-white/15 text-gray-300 hover:bg-white/10'}`}
-              title="Toggle Audio Experience"
+              className={`hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] uppercase tracking-widest border transition-all cursor-pointer backdrop-blur-md ${isPlayingAudio ? 'bg-white text-black border-white' : 'border-white/40 text-gray-200 hover:bg-white/20 bg-black/40'}`}
             >
-              <span className={`flex items-center gap-0.5 h-3 ${isPlayingAudio ? 'animate-pulse' : ''}`}>
-                <span className="w-0.5 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
-                <span className="w-0.5 h-3 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
-                <span className="w-0.5 h-1.5 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
-              </span>
-              <span className="hidden sm:inline font-mono">{isPlayingAudio ? 'Playing ♫' : 'Sound Vibe'}</span>
-            </motion.button>
-
-            <button onClick={() => setCurrentTab("store")} className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 border border-white/15 flex items-center justify-center text-xs text-white transition-all cursor-pointer backdrop-blur-md">
-              <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              <span>{isPlayingAudio ? '♫ Audio On' : 'Sound Vibe'}</span>
             </button>
-            
-            <button onClick={() => setCurrentTab("cart")} className="relative w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 border border-white/15 flex items-center justify-center text-xs text-white transition-all cursor-pointer backdrop-blur-md">
-              <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+
+            <button onClick={() => setCurrentTab("store")} className="text-[10px] uppercase tracking-[0.2em] text-gray-200 hover:text-white transition-colors bg-transparent border-none cursor-pointer hidden sm:block drop-shadow">
+              Search
+            </button>
+
+            <button onClick={() => setCurrentTab("cart")} className="text-[10px] uppercase tracking-[0.2em] text-gray-200 hover:text-white transition-colors bg-transparent border-none cursor-pointer drop-shadow">
+              Bag
             </button>
 
             {token ? (
-              <button onClick={() => setCurrentTab("profile")} className="hidden sm:flex px-4 py-1.5 rounded-full bg-[#1c39bb] text-white text-[10px] uppercase tracking-wider font-medium shadow-lg cursor-pointer">
+              <button onClick={() => setCurrentTab("profile")} className="text-[10px] uppercase tracking-[0.2em] text-white font-medium border-b border-white pb-0.5 cursor-pointer bg-transparent drop-shadow">
                 Profile
               </button>
             ) : (
-              <div className="hidden sm:flex items-center gap-2">
-                <button onClick={() => handleOpenAuth(true)} className="px-4 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/15 text-white text-[10px] uppercase tracking-wider transition-all cursor-pointer">
+              <div className="flex items-center gap-2.5">
+                <button onClick={() => handleOpenAuth(true)} className="text-[10px] uppercase tracking-[0.2em] text-gray-200 hover:text-white transition-colors bg-transparent border-none cursor-pointer drop-shadow">
                   Login
                 </button>
-                <button onClick={() => handleOpenAuth(false)} className="px-4 py-1.5 rounded-full bg-[#1c39bb] hover:bg-[#3b60e4] text-white text-[10px] uppercase tracking-wider font-medium shadow-lg cursor-pointer transition-colors">
-                  Sign Up
+                <button onClick={() => handleOpenAuth(false)} className="px-4 py-1.5 bg-white text-black text-[9px] uppercase tracking-[0.2em] rounded-none hover:bg-gray-100 transition-colors cursor-pointer font-medium shadow-lg">
+                  Register
                 </button>
               </div>
             )}
           </div>
-        </motion.header>
-      </div>
 
-      <main className="relative z-10 pt-32 px-4 sm:px-8 lg:px-12 max-w-[1450px] mx-auto pointer-events-auto">
+        </div>
+      </header>
+
+      <main className="relative z-10 bg-[#fcfbf9]">
         
-        {/* HERO SECTION */}
-        <section className="relative min-h-[80vh] flex flex-col justify-center items-start pb-12 space-y-6">
+        {/* HERO SECTION WITH BALANCED CONTRAST OVERLAY */}
+        <section className="relative h-screen w-full flex flex-col justify-end items-start pb-24 px-8 lg:px-16 overflow-hidden bg-black">
+          <motion.div 
+            style={{ y: bgVideoY }}
+            className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0"
+          >
+            <video 
+              src="https://res.cloudinary.com/dp3njnwvf/video/upload/v1787750108/Models_modeling_silk_sarees_202608261842_v90zej.mp4" 
+              autoPlay 
+              muted 
+              loop 
+              playsInline 
+              className="w-full h-full object-cover filter brightness-[0.75]"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/20" />
+          </motion.div>
+
           <motion.div 
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-            style={{ y: floatingY }}
-            className="max-w-4xl space-y-6"
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="relative z-10 max-w-4xl space-y-6 text-white"
           >
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.9 }}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/15 backdrop-blur-2xl text-[10px] uppercase tracking-[0.3em] text-blue-200 shadow-xl"
-            >
-              <span className="text-[#3b60e4]">✦</span> ULTRA-LUXURY HANDLOOM EXPERIENCE
-            </motion.div>
+            <span className="text-[9px] uppercase tracking-[0.4em] text-gray-300 block font-mono">
+              [ HANDCRAFTED HERITAGE SAREES ]
+            </span>
 
-            <div className="space-y-2">
-              <motion.h1 
-                initial={{ y: 30, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 1, delay: 0.2 }}
-                className="font-['Playfair_Display',serif] italic text-6xl sm:text-8xl lg:text-9xl text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-[#3b60e4] leading-[1.05] font-normal tracking-tight"
-              >
-                Bhairavi Threads
-              </motion.h1>
-            </div>
+            <h2 className="font-serif text-4xl sm:text-6xl lg:text-7xl font-light leading-[1.1] tracking-tight text-white drop-shadow-md">
+              Timeless Indian Grace, <br />
+              <span className="italic font-light text-gray-200">Reimagined for Today</span>
+            </h2>
 
-            <motion.h2 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 1, delay: 0.3 }}
-              className="font-serif text-xs sm:text-sm uppercase tracking-[0.35em] text-blue-300 font-light"
-            >
-              Master artisan weaves meets immersive digital architecture.
-            </motion.h2>
+            <p className="font-sans text-xs sm:text-sm text-gray-200 max-w-lg leading-relaxed font-light tracking-wide drop-shadow">
+              Experience the unmatched richness of authentic Indian handlooms. From the sacred looms of Varanasi to your wardrobe, every weave tells a story of unmatched devotion and artistry.
+            </p>
 
-            <motion.p 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 1, delay: 0.4 }}
-              className="font-serif text-xs sm:text-sm text-gray-300 max-w-lg leading-relaxed tracking-wide font-light"
-            >
-              Immerse yourself in hand-painted organzas, royal tissue golds, and pristine mulberry silks. Curated directly from heritage looms in Pune and Varanasi for modern connoisseurs.
-            </motion.p>
-
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.5 }}
-              className="flex flex-wrap items-center gap-5 pt-4"
-            >
+            <div className="flex flex-wrap items-center gap-4 pt-2">
               <motion.button 
-                whileHover={{ scale: 1.04, boxShadow: "0 0 30px rgba(59,96,228,0.6)" }}
-                whileTap={{ scale: 0.96 }}
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setCurrentTab("store")}
-                className="bg-[#1c39bb] hover:bg-[#3b60e4] text-white px-8 py-3.5 rounded-full text-[11px] uppercase tracking-[0.25em] font-medium transition-all flex items-center gap-3 shadow-2xl cursor-pointer border border-blue-400/40"
+                className="bg-white text-black hover:bg-gray-100 px-8 py-3.5 text-[10px] uppercase tracking-[0.3em] font-medium transition-all cursor-pointer shadow-2xl"
               >
-                <span>Explore Collection</span>
-                <span>→</span>
+                Explore Sarees
               </motion.button>
 
               <motion.button 
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.96 }}
-                onClick={() => setIsContactOpen(true)}
-                className="bg-white/5 hover:bg-white/10 text-white px-8 py-3.5 rounded-full text-[11px] uppercase tracking-[0.25em] font-light border border-white/20 backdrop-blur-2xl transition-all flex items-center gap-3 cursor-pointer shadow-xl"
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setIsVideoModalOpen(true)}
+                className="bg-black/30 hover:bg-black/50 text-white border border-white/40 px-7 py-3.5 text-[10px] uppercase tracking-[0.3em] font-light transition-all cursor-pointer backdrop-blur-md"
               >
-                <span>Concierge Support</span>
-                <span className="text-[#3b60e4]">✦</span>
+                Watch Our Craft ✦
               </motion.button>
-            </motion.div>
+            </div>
           </motion.div>
         </section>
 
 
-        {/* HERITAGE CHRONICLES */}
-        <section id="btv-story" className="py-24 relative">
-          <div className="space-y-4 mb-14">
-            <motion.span 
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              className="text-[10px] uppercase tracking-[0.35em] text-[#3b60e4] font-semibold"
-            >
-              The Heritage Chronicles
-            </motion.span>
-            <motion.h2 
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-3xl sm:text-5xl font-serif text-white"
-            >
-              Rooted in Tradition. <em className="italic text-blue-200 font-light">Woven for the Future.</em>
-            </motion.h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
-            
-            <motion.div 
-              whileHover={{ y: -8, scale: 1.02 }}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="bg-white/[0.02] backdrop-blur-3xl border border-white/15 rounded-3xl p-8 sm:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.6)] flex flex-col justify-between space-y-6 relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 opacity-15 group-hover:opacity-30 transition-opacity duration-700 pointer-events-none">
-                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSH06vKxqToW7HNP2iuNXnjuzCIPwVCozlOmPRG5_577A&s=10" alt="Texture 1" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
-              </div>
-              <div className="relative z-10 space-y-4">
-                <span className="text-[10px] uppercase tracking-[0.3em] text-[#3b60e4] font-mono">Chapter I</span>
-                <h3 className="font-serif text-2xl text-white font-normal">The Unhurried Loom</h3>
-                <p className="text-xs sm:text-sm text-gray-300 font-serif leading-relaxed font-light">
-                  In an era dictated by instant algorithms, our veteran weavers in Varanasi take weeks to perfect a single border. True luxury requires absolute silence, unhurried devotion, and timeless technique.
-                </p>
-              </div>
-              <div className="relative z-10 pt-5 border-t border-white/10 text-[10px] text-blue-300 font-mono">
-                <span>✦ Handcrafted in Varanasi</span>
-              </div>
-            </motion.div>
-
-            <motion.div 
-              whileHover={{ y: -8, scale: 1.02 }}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="bg-white/[0.02] backdrop-blur-3xl border border-white/15 rounded-3xl p-8 sm:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.6)] flex flex-col justify-between space-y-6 relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 opacity-15 group-hover:opacity-30 transition-opacity duration-700 pointer-events-none">
-                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt6iSubulRTfFexH7sQNlbAxT3HbPXE9toZlMa0PjHhg&s=10" alt="Texture 2" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
-              </div>
-              <div className="relative z-10 space-y-4">
-                <span className="text-[10px] uppercase tracking-[0.3em] text-[#3b60e4] font-mono">Chapter II</span>
-                <h3 className="font-serif text-2xl text-white font-normal">Living Artistry</h3>
-                <p className="text-xs sm:text-sm text-gray-300 font-serif leading-relaxed font-light">
-                  Our hand-painted Kalamkaris merge ancient mythological storytelling with modern minimalist color palettes. Each brushstroke breathes vibrant life into pure mulberry silk canvases.
-                </p>
-              </div>
-              <div className="relative z-10 pt-5 border-t border-white/10 text-[10px] text-blue-300 font-mono">
-                <span>✦ Organic Vegetable Dyes</span>
-              </div>
-            </motion.div>
-
-            <motion.div 
-              whileHover={{ y: -8, scale: 1.02 }}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="bg-white/[0.02] backdrop-blur-3xl border border-white/15 rounded-3xl p-8 sm:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.6)] flex flex-col justify-between space-y-6 relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 opacity-15 group-hover:opacity-30 transition-opacity duration-700 pointer-events-none">
-                <img src="https://houseofaaradhya.com/cdn/shop/files/DSC00014.jpg?v=1767974106" alt="Texture 3" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
-              </div>
-              <div className="relative z-10 space-y-4">
-                <span className="text-[10px] uppercase tracking-[0.3em] text-[#3b60e4] font-mono">Chapter III</span>
-                <h3 className="font-serif text-2xl text-white font-normal">The Mindful Wardrobe</h3>
-                <p className="text-xs sm:text-sm text-gray-300 font-serif leading-relaxed font-light">
-                  Bhairavi.threads stands for radical sustainability and ethical craftsmanship. By bridging rural master artisans with global connoisseurs, we preserve heritage while empowering families.
-                </p>
-              </div>
-              <div className="relative z-10 pt-5 border-t border-white/10 text-[10px] text-blue-300 font-mono">
-                <span>✦ Ethical & Sustainable</span>
-              </div>
-            </motion.div>
-
-          </div>
-        </section>
-
-
-        {/* CINEMATIC BRAND FILM SECTION */}
-        <section id="btv-film" className="py-16 relative max-w-4xl mx-auto">
+        {/* RUNWAY SECTIONS — TRANSFORMED INTO INDEPENDENT GALLERY CARDS WITH SPACING */}
+        <div id="btv-cinematic" className="w-full bg-[#fcfbf9] py-20 px-8 lg:px-16 max-w-[1800px] mx-auto">
           <motion.div 
-            initial={{ opacity: 0, scale: 0.98 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.8 }}
-            className="backdrop-blur-2xl bg-white/[0.02] rounded-3xl p-6 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.7)] grid grid-cols-1 lg:grid-cols-12 gap-6 items-center border border-white/10"
+            className="mb-14 border-b border-black/15 pb-8"
           >
-            
-            <div className="lg:col-span-6 space-y-4">
-              <span className="text-[9px] uppercase tracking-[0.3em] text-[#3b60e4] font-semibold px-3 py-1 rounded-full bg-[#1c39bb]/25 border border-[#1c39bb]/40">
-                Cinematic Feature
-              </span>
-              <h2 className="font-serif text-2xl sm:text-3xl text-white leading-tight">
-                The Story Behind <br /><em className="italic text-blue-200 font-light">Every Single Weave</em>
-              </h2>
-              <p className="text-xs text-gray-300 font-serif leading-relaxed font-light">
-                Step inside our family looms in Pune and Varanasi. Witness the meditative rhythm of shuttle looms and master craftsmanship captured in pristine detail.
-              </p>
-              <motion.button 
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.96 }}
-                onClick={() => setIsVideoModalOpen(true)}
-                className="bg-white text-black hover:bg-[#3b60e4] hover:text-white px-6 py-2.5 rounded-full text-[10px] uppercase tracking-[0.2em] font-medium transition-all shadow-xl cursor-pointer flex items-center gap-2.5"
-              >
-                <span>▶ Watch Brand Film</span>
-              </motion.button>
-            </div>
+            <span className="text-[9px] uppercase tracking-[0.4em] text-gray-500 font-mono block mb-2">SIGNATURE DRAPES</span>
+            <h3 className="font-serif text-3xl sm:text-5xl font-light text-[#111111]">Artistry in Motion</h3>
+          </motion.div>
 
-            <div className="lg:col-span-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-14">
+            {cinematicVideos.map((vid, idx) => (
               <motion.div 
-                whileHover={{ scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                onClick={() => setIsVideoModalOpen(true)}
-                className="relative aspect-[16/10] rounded-2xl overflow-hidden shadow-xl group cursor-pointer bg-black border border-white/15 max-w-sm mx-auto w-full"
+                key={idx} 
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 0.7, delay: (idx % 2) * 0.15 }}
+                className="group bg-white border border-black/15 overflow-hidden flex flex-col justify-between shadow-lg hover:border-black/40 transition-all duration-500"
               >
-                <video 
-                  src={assets.modelVideo1 || assets.heroVideo} 
-                  autoPlay 
-                  muted 
-                  loop 
-                  playsInline 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-95"
-                />
-                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                  <div className="w-10 h-10 rounded-full bg-[#1c39bb] flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
-                    <div className="w-3 h-3 text-white ml-0.5 text-xs">▶</div>
+                {/* Independent Video Container with Poster Fallback */}
+                <div className="relative aspect-[16/10] w-full bg-black overflow-hidden">
+                  <video 
+                    src={vid.videoUrl}
+                    poster={vid.posterUrl}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    preload="none"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-[0.85]"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  
+                  <span className="absolute top-4 left-4 bg-white/90 backdrop-blur-md text-[#111111] px-3 py-1 text-[8px] uppercase tracking-widest font-mono border border-black/15 shadow-sm">
+                    RUNWAY {vid.id}
+                  </span>
+                </div>
+
+                {/* Content Area */}
+                <div className="p-8 space-y-4 flex flex-col justify-between flex-grow">
+                  <div className="space-y-2">
+                    <span className="text-[9px] uppercase tracking-[0.4em] text-gray-500 font-mono block">
+                      {vid.subtitle}
+                    </span>
+                    <h4 className="font-serif text-2xl sm:text-3xl font-light tracking-wide text-[#111111]">
+                      {vid.title}
+                    </h4>
+                    <p className="font-sans text-xs sm:text-sm text-gray-700 font-light leading-relaxed">
+                      {vid.desc}
+                    </p>
+                  </div>
+
+                  <div className="pt-4 border-t border-black/10 flex items-center justify-between">
+                    <span className="text-[9px] uppercase tracking-[0.4em] font-mono text-gray-500">[ BHAIRAVI RUNWAY ]</span>
+                    <button 
+                      onClick={() => setCurrentTab("store")}
+                      className="text-[10px] uppercase tracking-[0.3em] text-[#111111] hover:text-gray-600 transition-colors bg-transparent cursor-pointer font-bold font-mono"
+                    >
+                      Explore Weave →
+                    </button>
                   </div>
                 </div>
               </motion.div>
-            </div>
+            ))}
+          </div>
+        </div>
 
-          </motion.div>
+
+        {/* BRAND STORY SECTION (LIGHT THEME WITH CRISP TEXT) */}
+        <section id="btv-story" className="relative w-full min-h-screen bg-[#fcfbf9] py-28 px-8 lg:px-16 overflow-hidden flex flex-col justify-center border-t border-black/10">
+          <div className="max-w-[1800px] mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            
+            <motion.div 
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.9, ease: "easeOut" }}
+              className="lg:col-span-5 space-y-8 z-10"
+            >
+              <div className="space-y-3">
+                <span className="text-[9px] uppercase tracking-[0.4em] text-gray-500 font-mono">
+                  [ CHAPTER 0{activeStorySlide + 1} // OUR HERITAGE STORY ]
+                </span>
+                <h3 className="font-serif text-3xl sm:text-5xl font-light text-[#111111] leading-tight">
+                  Rooted in Tradition, Crafted with Love
+                </h3>
+              </div>
+
+              <div className="space-y-6 text-gray-800 font-light text-sm leading-relaxed">
+                {activeStorySlide === 0 && (
+                  <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="space-y-4">
+                    <p className="text-gray-800 font-normal">
+                      Bhairavi Threads was born out of a deep reverence for India’s rich textile heritage. Connecting the historic handloom clusters of Varanasi with the vibrant creative energy of Pune, our journey is dedicated to celebrating the authentic soul of the Indian saree.
+                    </p>
+                    <p className="text-xs text-gray-600 font-mono">
+                      "Every drape tells a story of family, celebration, and generational craftsmanship."
+                    </p>
+                  </motion.div>
+                )}
+                {activeStorySlide === 1 && (
+                  <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="space-y-4">
+                    <p className="text-gray-800 font-normal">
+                      Behind every single saree is the patient, unhurried work of master artisans. Passing fine silk threads through traditional wooden looms, they pour weeks of devotion into creating wearable masterpieces that honor our ancestors.
+                    </p>
+                    <p className="text-xs text-gray-600 font-mono">
+                      "True luxury is measured in the hours of skilled hands and timeless dedication."
+                    </p>
+                  </motion.div>
+                )}
+                {activeStorySlide === 2 && (
+                  <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="space-y-4">
+                    <p className="text-gray-800 font-normal">
+                      We bring you authentic handlooms styled with contemporary grace. Whether it is a grand wedding celebration or an intimate family gathering, our sarees ensure you carry Indian elegance with effortless pride.
+                    </p>
+                    <p className="text-xs text-gray-600 font-mono">
+                      "Wear your heritage with pride and absolute grace."
+                    </p>
+                  </motion.div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-4 pt-4 border-t border-black/15">
+                {[
+                  { title: "Our Roots" },
+                  { title: "Our Artisans" },
+                  { title: "Our Promise" }
+                ].map((tab, idx) => (
+                  <motion.button
+                    key={idx}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setActiveStorySlide(idx)}
+                    className={`text-[9px] uppercase tracking-[0.3em] py-2 px-4 transition-all cursor-pointer font-mono border ${activeStorySlide === idx ? 'bg-[#111111] text-white border-[#111111] font-bold shadow-md' : 'bg-white text-gray-800 border-black/20 hover:border-black'}`}
+                  >
+                    0{idx + 1} // {tab.title}
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.9, ease: "easeOut" }}
+              className="lg:col-span-7 relative"
+            >
+              <div className="relative aspect-[16/10] w-full overflow-hidden bg-white border border-black/15 shadow-2xl group">
+                <img 
+                  src="https://res.cloudinary.com/dp3njnwvf/image/upload/v1787745923/Artisans_crafting_luxury_hand-pa__202608261733_x9ikh4.jpg" 
+                  alt="Artisans crafting luxury hand-painted sarees" 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                
+                <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between text-white font-mono text-[10px] tracking-[0.3em] drop-shadow-md">
+                  <span>[ VARANASI & PUNE CRAFT STUDIOS ]</span>
+                  <span className="text-gray-200">100% AUTHENTIC HANDLOOM</span>
+                </div>
+              </div>
+            </motion.div>
+
+          </div>
         </section>
 
 
         {/* NEW DROPS & PRODUCT GRID */}
-        <section id="new-drops" className="py-20 relative">
-          
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-12">
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2.5">
-                <h2 className="font-serif text-3xl sm:text-4xl text-white">New Drops</h2>
-                <span className="text-[#3b60e4]">✦</span>
-              </div>
-              <p className="text-xs text-gray-400 font-serif font-light">Fresh master weaves. Limited editions. Endless elegance.</p>
+        <section id="new-drops" className="py-28 px-8 lg:px-16 max-w-[1800px] mx-auto bg-[#fcfbf9]">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-16 border-b border-black/15 pb-8"
+          >
+            <div className="space-y-2">
+              <span className="text-[9px] uppercase tracking-[0.4em] text-gray-500 font-mono">CURATED COLLECTIONS</span>
+              <h3 className="font-serif text-3xl sm:text-5xl font-light text-[#111111]">Handloom Masterpieces</h3>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              {['All', 'Kalamkari', 'Cotton', 'Organza', 'Raga Tissue', 'Embroidery', 'Hand Painted'].map((cat) => (
-                <motion.button
+            <div className="flex flex-wrap items-center gap-3">
+              {['All', 'Hand Painted', 'Organza', 'Kalamkari', 'Cotton', 'Cyber Tissue'].map((cat) => (
+                <button
                   key={cat}
-                  whileHover={{ scale: 1.04 }}
-                  whileTap={{ scale: 0.96 }}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-4.5 py-2 rounded-full text-[11px] transition-all tracking-wide cursor-pointer border ${selectedCategory === cat ? 'bg-[#1c39bb] text-white font-medium shadow-lg border-blue-400/50' : 'bg-white/5 text-gray-300 hover:bg-white/10 border-white/15'}`}
+                  className={`px-4 py-2 text-[10px] uppercase tracking-[0.25em] transition-all cursor-pointer border ${selectedCategory === cat ? 'bg-[#111111] text-white border-[#111111] font-medium' : 'bg-white text-gray-800 border-black/20 hover:border-black'}`}
                 >
                   {cat}
-                </motion.button>
+                </button>
               ))}
             </div>
-          </div>
+          </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
             {filteredProducts.length > 0 ? (
               filteredProducts.map((prod, idx) => (
                 <motion.div 
                   key={prod.id || idx}
-                  initial={{ opacity: 0, y: 30 }}
+                  initial={{ opacity: 0, y: 40 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: idx * 0.08 }}
-                  whileHover={{ y: -8, scale: 1.03, rotateX: 3, rotateY: -3 }}
-                  style={{ perspective: 1000 }}
+                  transition={{ duration: 0.6, delay: (idx % 4) * 0.15 }}
+                  whileHover={{ y: -8, scale: 1.02 }}
                   onClick={() => setCurrentTab("store")}
-                  className="group bg-white/[0.02] backdrop-blur-2xl rounded-2xl p-4 border border-white/10 hover:border-[#3b60e4]/60 transition-all duration-300 flex flex-col justify-between cursor-pointer shadow-2xl"
+                  className="group bg-white border border-black/15 p-4 flex flex-col justify-between cursor-pointer hover:border-black/50 transition-all duration-500 shadow-md"
                 >
                   <div>
-                    <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-black mb-3.5 shadow-xl">
-                      <img src={prod.img} alt={prod.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 filter brightness-95" />
-                      <button onClick={(e) => { e.stopPropagation(); setCurrentTab("store"); }} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white text-xs border border-white/20 hover:bg-[#1c39bb] transition-colors cursor-pointer border-none shadow-lg">
+                    <div className="aspect-[4/5] overflow-hidden bg-gray-100 mb-4 relative">
+                      <img src={prod.img} alt={prod.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                      <span className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center text-xs text-black border border-black/20 shadow-sm">
                         ♡
-                      </button>
+                      </span>
+                      <span className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-md text-[#111111] px-3 py-1 text-[8px] uppercase tracking-widest font-mono border border-black/15">
+                        {prod.category}
+                      </span>
                     </div>
-                    <span className="text-[9px] uppercase font-mono text-blue-300 tracking-widest block mb-1">{prod.category}</span>
-                    <h3 className="font-serif text-xs sm:text-sm text-white font-normal line-clamp-1">{prod.title}</h3>
+                    <h4 className="font-serif text-lg text-[#111111] font-medium line-clamp-1">{prod.title}</h4>
                   </div>
 
-                  <div className="pt-3.5 flex items-center justify-between mt-3 border-t border-white/10">
-                    <span className="font-mono text-xs text-gray-100 font-semibold">{prod.price}</span>
+                  <div className="pt-4 flex items-center justify-between mt-4 border-t border-black/10">
+                    <span className="font-mono text-sm text-[#111111] font-bold">{prod.price}</span>
                     <div className="flex items-center gap-1.5">
                       {prod.colors.map((c, cIdx) => (
-                        <span key={cIdx} className="w-2.5 h-2.5 rounded-full border border-white/30 shadow-md" style={{ backgroundColor: c }} />
+                        <span key={cIdx} className="w-2.5 h-2.5 rounded-full border border-black/30 shadow-xs" style={{ backgroundColor: c }} />
                       ))}
                     </div>
                   </div>
                 </motion.div>
               ))
             ) : (
-              <div className="col-span-full py-16 text-center text-gray-400 font-serif text-xs">
-                No pieces found in this category. Explore All drops!
+              <div className="col-span-full py-20 text-center text-gray-500 font-serif text-sm">
+                No sarees found in this collection. Explore All!
               </div>
             )}
           </div>
-
         </section>
 
 
-        {/* RUNWAY SHOWCASE (Compact & Sleek Vertical Cards) */}
-        <section id="btv-runway" className="py-20 relative">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
-            <div className="space-y-1.5">
-              <span className="text-[10px] uppercase tracking-[0.3em] text-[#3b60e4] font-semibold">Runway Showcase</span>
-              <h2 className="text-3xl sm:text-5xl text-white font-serif">Draped in <em className="italic text-blue-200 font-light">Movement.</em></h2>
-            </div>
-            <p className="text-xs sm:text-sm text-gray-300 max-w-md font-serif font-light">
-              Experience how our drapes flow, catch the ambient light, and move in real time with absolute majestic grace.
-            </p>
-          </div>
+        {/* EXCLUSIVE EDITIONS */}
+        <section id="btv-collections" className="py-28 px-8 lg:px-16 max-w-[1800px] mx-auto bg-[#fcfbf9]">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="text-center max-w-xl mx-auto space-y-3 mb-20"
+          >
+            <span className="text-[9px] uppercase tracking-[0.4em] text-gray-500 font-mono">EXCLUSIVE EDITIONS</span>
+            <h3 className="font-serif text-3xl sm:text-5xl font-light text-[#111111]">Classic Handloom Drapes</h3>
+          </motion.div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
-            {[assets.modelVideo1, assets.modelVideo2, assets.modelVideo3, assets.modelVideo4].map((vid, idx) => (
-              <motion.div 
-                key={idx}
-                whileHover={{ scale: 1.02, y: -4 }}
-                onClick={() => setCurrentTab("store")} 
-                className="bg-white/[0.02] backdrop-blur-2xl rounded-2xl overflow-hidden border border-white/10 group shadow-lg flex flex-col hover:border-[#3b60e4]/50 transition-all cursor-pointer max-w-[240px] mx-auto w-full"
-              >
-                <div className="relative aspect-[4/5] bg-black overflow-hidden">
-                  <video src={vid} autoPlay muted loop playsInline className="w-full h-full object-cover opacity-95 group-hover:scale-108 transition-transform duration-700" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#000103] via-transparent to-transparent opacity-75" />
-                  <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-[8px] font-mono text-blue-300 border border-white/10">
-                    LOOK 0{idx + 1}
-                  </span>
-                </div>
-                <div className="p-3.5 space-y-1">
-                  <h3 className="font-serif text-xs text-white font-medium">Fluid Silk Drapes</h3>
-                  <p className="text-[9px] text-gray-400 font-light line-clamp-1">Handcrafted cinematic motion.</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-
-
-        {/* SLEEK, COMPACT COLLECTIONS GRID */}
-        <section id="btv-collections" className="py-20 relative">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <span className="text-[10px] uppercase tracking-[0.3em] text-[#3b60e4] font-semibold">The Collections</span>
-              <h2 className="text-3xl sm:text-5xl text-white font-serif">Textiles with a <em className="italic text-blue-200 font-light">Point of View.</em></h2>
-            </motion.div>
-            <motion.p 
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="text-xs sm:text-sm text-gray-300 max-w-sm font-serif font-light"
-            >
-              Six expressions of cloth. Each carrying its own rhythm, history, and memory.
-            </motion.p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             {collectionsList.map((item, idx) => (
               <motion.div 
                 key={idx}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: idx * 0.08 }}
-                whileHover={{ scale: 1.02, y: -5, boxShadow: "0 15px 30px rgba(28,57,187,0.2)" }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.7, delay: (idx % 2) * 0.2 }}
                 onClick={() => setCurrentTab("store")}
-                className="bg-white/[0.02] backdrop-blur-2xl rounded-2xl overflow-hidden border border-white/10 group cursor-pointer shadow-lg transition-all hover:border-[#3b60e4]/60 flex flex-col justify-between max-w-[360px] mx-auto w-full"
+                className={`group bg-white border border-black/15 p-6 flex flex-col justify-between cursor-pointer hover:border-black/50 transition-all duration-500 shadow-md ${idx === 0 ? 'md:col-span-2' : ''}`}
               >
-                <div>
-                  <div className="aspect-[16/9] overflow-hidden bg-black relative shadow-md">
-                    <motion.img 
-                      whileHover={{ scale: 1.08 }}
-                      transition={{ duration: 0.6 }}
-                      src={item.image} 
-                      alt={item.title} 
-                      className="w-full h-full object-cover opacity-95" 
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#02040c] via-transparent to-transparent opacity-65" />
-                    <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-[8px] font-mono text-blue-300 border border-white/10">
-                      CHAPTER {item.id}
+                <div className="space-y-4">
+                  <div className={`overflow-hidden bg-gray-100 relative ${idx === 0 ? 'aspect-[21/9]' : 'aspect-[16/10]'}`}>
+                    <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                    <span className="absolute top-3 left-3 bg-white/95 backdrop-blur-md text-[#111111] px-3 py-1 text-[8px] uppercase tracking-widest font-mono border border-black/15">
+                      EDITION {item.id}
                     </span>
                   </div>
-                  
-                  <div className="p-4 space-y-1.5">
-                    <h3 className="font-serif text-base text-white font-normal">{item.title}</h3>
-                    <p className="text-[10px] text-gray-300 leading-relaxed font-serif font-light line-clamp-2">{item.desc}</p>
-                    <p className="text-[9px] text-gray-400 italic pt-1.5 border-t border-white/5 font-serif line-clamp-1">{item.longStory}</p>
+                  <div className="space-y-2 pt-2">
+                    <h4 className="font-serif text-2xl sm:text-3xl text-[#111111] font-medium">{item.title}</h4>
+                    <p className="font-sans text-xs sm:text-sm text-gray-700 leading-relaxed font-normal">{item.desc}</p>
+                    <p className="font-sans text-[11px] text-gray-600 italic font-light pt-2 border-t border-black/10">{item.longStory}</p>
                   </div>
                 </div>
 
-                <div className="px-4 pb-4 pt-1">
-                  <span className="text-[9px] uppercase tracking-[0.2em] font-medium text-blue-300 inline-block group-hover:translate-x-1 transition-transform">Explore Weaves →</span>
+                <div className="pt-6 mt-6 border-t border-black/10 flex items-center justify-between">
+                  <span className="text-[9px] uppercase tracking-[0.4em] font-mono text-gray-500">[ BHAIRAVI ARCHIVES ]</span>
+                  <span className="text-[10px] uppercase tracking-[0.3em] font-mono text-[#111111] group-hover:text-gray-600 transition-colors font-bold">
+                    Explore Edition →
+                  </span>
                 </div>
               </motion.div>
             ))}
@@ -622,18 +626,17 @@ export default function LandingView({ setCurrentTab, token, setIsLoginView, setS
 
 
         {/* CONCIERGE CONTACT SECTION */}
-        <section id="btv-contact" className="py-16 relative max-w-2xl mx-auto">
-          <div className="backdrop-blur-3xl bg-white/[0.02] border border-white/20 rounded-3xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.8)]">
-            
+        <section id="btv-contact" className="bg-[#fcfbf9] py-24 border-t border-black/15 px-8">
+          <div className="max-w-2xl mx-auto bg-white border border-black/20 p-10 shadow-2xl">
             <button 
               onClick={() => setIsContactOpen(!isContactOpen)}
-              className="w-full px-7 py-5 flex items-center justify-between text-left cursor-pointer bg-transparent border-none hover:bg-white/[0.03] transition-colors"
+              className="w-full flex items-center justify-between text-left cursor-pointer bg-transparent border-none"
             >
               <div className="space-y-1">
-                <span className="text-[10px] uppercase tracking-[0.35em] text-[#3b60e4] font-semibold">Concierge</span>
-                <h3 className="font-serif text-xl text-white font-normal">Have questions? Send us a message</h3>
+                <span className="text-[9px] uppercase tracking-[0.4em] text-gray-500 font-mono">CUSTOMER CONCIERGE</span>
+                <h3 className="font-serif text-xl sm:text-2xl text-[#111111] font-medium">Custom Inquiries & Private Consultations</h3>
               </div>
-              <span className="text-sm text-blue-300 font-mono w-8 h-8 rounded-full bg-white/5 border border-white/15 flex items-center justify-center shadow-md">
+              <span className="text-lg font-mono text-[#111111] font-bold">
                 {isContactOpen ? '−' : '+'}
               </span>
             </button>
@@ -644,77 +647,76 @@ export default function LandingView({ setCurrentTab, token, setIsLoginView, setS
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="overflow-hidden px-7 pb-7 pt-3 border-t border-white/10"
+                  className="overflow-hidden pt-8 border-t border-black/15 mt-6"
                 >
                   {isSubmitted ? (
-                    <div className="py-10 text-center space-y-3">
-                      <div className="w-10 h-10 rounded-full bg-[#1c39bb] text-white flex items-center justify-center mx-auto text-xs font-bold shadow-xl">✓</div>
-                      <h4 className="font-serif text-lg text-white">Message Sent</h4>
-                      <p className="text-xs text-gray-300 font-serif font-light">Thank you for reaching out. Our concierge will connect with you soon.</p>
+                    <div className="py-8 text-center space-y-2">
+                      <div className="w-10 h-10 rounded-full bg-[#111111] text-white flex items-center justify-center mx-auto text-xs font-bold">✓</div>
+                      <h4 className="font-serif text-xl text-[#111111] font-medium">Inquiry Sent Successfully</h4>
+                      <p className="font-sans text-xs text-gray-600">Our team will get in touch with you shortly.</p>
                     </div>
                   ) : (
-                    <form onSubmit={handleContactSubmit} className="space-y-4 pt-2">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <form onSubmit={handleContactSubmit} className="space-y-5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                         <div className="space-y-1.5">
-                          <label className="text-[10px] uppercase tracking-wider text-blue-200 font-medium">Your Name</label>
+                          <label className="text-[9px] uppercase tracking-wider text-gray-700 font-mono font-semibold">Your Name</label>
                           <input 
                             type="text" 
                             required
                             value={contactForm.name}
                             onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
                             placeholder="Ananya Deshmukh" 
-                            className="w-full bg-[#02040c]/90 border border-white/20 px-3.5 py-2.5 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#3b60e4] transition-all shadow-inner"
+                            className="w-full bg-gray-50 border border-black/25 px-4 py-3 text-xs text-[#111111] focus:outline-none focus:border-black font-sans"
                           />
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-[10px] uppercase tracking-wider text-blue-200 font-medium">Email Address</label>
+                          <label className="text-[9px] uppercase tracking-wider text-gray-700 font-mono font-semibold">Email Address</label>
                           <input 
                             type="email" 
                             required
                             value={contactForm.email}
                             onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
                             placeholder="ananya@example.com" 
-                            className="w-full bg-[#02040c]/90 border border-white/20 px-3.5 py-2.5 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#3b60e4] transition-all shadow-inner"
+                            className="w-full bg-gray-50 border border-black/25 px-4 py-3 text-xs text-[#111111] focus:outline-none focus:border-black font-sans"
                           />
                         </div>
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-[10px] uppercase tracking-wider text-blue-200 font-medium">Your Message</label>
+                        <label className="text-[9px] uppercase tracking-wider text-gray-700 font-mono font-semibold">Message / Requirements</label>
                         <textarea 
                           rows="3" 
                           required
                           value={contactForm.message}
                           onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
-                          placeholder="Tell us about your custom order or inquiry..." 
-                          className="w-full bg-[#02040c]/90 border border-white/20 px-3.5 py-2.5 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#3b60e4] transition-all resize-none shadow-inner"
+                          placeholder="Tell us about your saree preference or special occasion..." 
+                          className="w-full bg-gray-50 border border-black/25 px-4 py-3 text-xs text-[#111111] focus:outline-none focus:border-black font-sans resize-none"
                         />
                       </div>
 
-                      <motion.button 
-                        whileHover={{ scale: 1.01 }}
-                        whileTap={{ scale: 0.99 }}
+                      <button 
                         type="submit" 
-                        className="w-full bg-[#1c39bb] hover:bg-[#3b60e4] text-white py-3 rounded-xl text-[10px] uppercase tracking-[0.25em] font-medium shadow-2xl transition-all cursor-pointer border border-blue-400/40"
+                        className="w-full bg-[#111111] hover:bg-black text-white py-4 text-[10px] uppercase tracking-[0.3em] font-medium transition-colors cursor-pointer shadow-lg"
                       >
-                        Send Message →
-                      </motion.button>
+                        Submit Inquiry →
+                      </button>
                     </form>
                   )}
                 </motion.div>
               )}
             </AnimatePresence>
-
           </div>
         </section>
 
       </main>
 
       {/* FOOTER */}
-      <footer className="border-t border-white/10 py-10 px-6 text-center text-[11px] text-gray-500 tracking-wider relative z-15 bg-[#000103] font-light">
-        <p>© {new Date().getFullYear()} Bhairavi Threads. All rights reserved. · Handcrafted in Pune & Varanasi</p>
+      <footer className="bg-[#111111] text-gray-300 py-16 px-8 text-center font-mono tracking-widest text-[10px] space-y-4 border-t border-black/20">
+        <h2 className="font-serif text-3xl tracking-[0.3em] uppercase text-white font-light">Bhairavi Threads</h2>
+        <p className="text-gray-400 text-[9px]">Handloom Studios · Varanasi · Pune · Mumbai · Delhi</p>
+        <div className="w-12 h-[1px] bg-white/35 mx-auto my-4" />
+        <p className="text-[9px] text-gray-400">© {new Date().getFullYear()} Bhairavi Threads. All rights reserved. Authentic Indian Handlooms.</p>
       </footer>
 
       {/* BRAND FILM MODAL */}
@@ -724,17 +726,17 @@ export default function LandingView({ setCurrentTab, token, setIsLoginView, setS
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl flex items-center justify-center p-4 sm:p-8"
+            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 sm:p-8"
           >
-            <div className="relative w-full max-w-5xl aspect-video bg-[#020514] rounded-3xl overflow-hidden border border-white/25 shadow-2xl">
+            <div className="relative w-full max-w-6xl aspect-video bg-black border border-white/20 shadow-2xl">
               <button 
                 onClick={() => setIsVideoModalOpen(false)}
-                className="absolute top-5 right-5 z-30 w-9 h-9 rounded-full bg-black/70 border border-white/25 text-white flex items-center justify-center hover:bg-[#1c39bb] transition-colors cursor-pointer text-sm shadow-xl"
+                className="absolute top-5 right-5 z-30 w-9 h-9 bg-white text-black flex items-center justify-center font-mono text-xs font-bold cursor-pointer hover:bg-gray-200"
               >
                 ✕
               </button>
               <video 
-                src={assets.modelVideo1 || assets.heroVideo} 
+                src="https://res.cloudinary.com/dp3njnwvf/video/upload/v1787751698/Handloom_saree_creation_visual_s__202608261911_ickzj3.mp4" 
                 autoPlay 
                 controls 
                 playsInline 

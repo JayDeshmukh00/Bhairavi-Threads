@@ -1,4 +1,4 @@
-export const ADMIN_EMAILS = ["admin@bhairavithreads.com", "jay@bhairavithreads.com"]; 
+export const ADMIN_EMAILS = ["jaydeshmukh583@gmail.com"]; 
 export const ADMIN_PHONES = ["9657127253"]; // Configured Admin Phone Number
 
 export const assets = {

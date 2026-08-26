@@ -97,12 +97,10 @@ export default function App() {
         .then(res => { if (res.data.address) setAddress(res.data.address); })
         .catch(err => console.error(err));
 
-      // Fetch personal user orders
       axios.get(`${API_BASE}/api/orders/user?email=${userEmail || `client_${userPhone}@bhairavithreads.com`}`)
         .then(res => setMyOrders(res.data))
         .catch(err => console.error(err));
 
-      // Fetch global orders exclusively for admin
       if (isAdmin) {
         axios.get(`${API_BASE}/api/orders`)
           .then(res => setAllOrders(res.data))
@@ -125,11 +123,17 @@ export default function App() {
     localStorage.setItem('phone', userData.phone || '');
 
     setShowAuth(false);
+    
+    // Instantly transition and enter the main app view upon success
+    sessionStorage.setItem('seenLanding', 'true');
+    setHasSeenLanding(true);
+    setCurrentTab('store');
+
     showAlert(`Welcome to Bhairavi Threads, ${userData.name || 'Patron'}!`);
   };
 
   return (
-    <div className="bhairavi-site min-h-screen relative bg-[#000103] text-[#f8fafc]">
+    <div className="bhairavi-site min-h-screen relative bg-[#f9f8f6] text-[#111111]">
       <CustomAlert alertInfo={customAlert} onClose={() => setCustomAlert(null)} />
 
       {currentTab === 'landing' && !hasSeenLanding && !detailProduct ? (
@@ -139,7 +143,7 @@ export default function App() {
           setShowAuth={setShowAuth}
         />
       ) : (
-        <div className="min-h-screen pb-24 bg-[#000103] text-[#f8fafc]">
+        <div className="min-h-screen pb-24 bg-[#f9f8f6] text-[#111111]">
           <Navbar 
             currentTab={currentTab} 
             setCurrentTab={(tab) => { setDetailProduct(null); setCurrentTab(tab); }} 
@@ -171,7 +175,19 @@ export default function App() {
                 setZoomImage={setZoomImage} 
                 addToCart={(p) => {
                   if (!token) { setShowAuth(true); return; }
-                  triggerToast("Curated to Trunk", `Added ${p.name} to your trousseau.`, true);
+                  const vIndex = selectedVariants[p._id] || 0;
+                  const variant = p.variants[vIndex];
+                  if (variant.stockStatus === 'Out of Stock') { showAlert("This variant is Out of Stock!", "error"); return; }
+                  const cartKey = `${p._id}-${vIndex}`;
+                  setCart(prev => {
+                    const existing = prev.find(item => item.cartKey === cartKey);
+                    if (existing) return prev.map(item => item.cartKey === cartKey ? { ...item, qty: item.qty + 1 } : item);
+                    return [...prev, {
+                      cartKey, _id: p._id, name: `${p.name} (${variant.color} - ${variant.design})`,
+                      price: variant.price, image: variant.images?.[0] || 'https://via.placeholder.com/150', qty: 1
+                    }];
+                  });
+                  triggerToast("Curated to Trunk", `Added ${p.name} to your trousseau bag.`, true);
                 }} 
                 reviewRating={reviewRating} 
                 setReviewRating={setReviewRating} 
@@ -224,32 +240,63 @@ export default function App() {
                 currentTab={currentTab}
               />
             ) : currentTab === 'cart' ? (
-              <CartView cart={cart} updateQty={(cartKey, delta) => {
-                setCart(prev => prev.map(item => {
-                  if (item.cartKey === cartKey) {
-                    const newQty = item.qty + delta;
-                    return newQty > 0 ? { ...item, qty: newQty } : null;
-                  }
-                  return item;
-                }).filter(Boolean));
-              }} coupons={coupons} handleWhatsAppCheckout={async (total, code) => {
-                if (!token) { setShowAuth(true); return; }
-                if (cart.length === 0) { showAlert("Trunk is empty!", "error"); return; }
-                try {
-                  await axios.post(`${API_BASE}/api/orders`, { customerEmail: userEmail || userPhone, items: cart, totalAmount: total, shippingAddress: address });
-                  fetchData();
-                } catch(e) {}
-                let msg = `New Order for Bhairavi Threads:\n\n*Customer:* ${userName} (${address.phone || userPhone})\n*Destination:* ${address.street || 'N/A'}, ${address.city || ''} - ${address.pincode || ''}\n*Coupon Applied:* ${code || 'None'}\n\n*Items:* \n`;
-                cart.forEach((item, i) => msg += `${i+1}. ${item.name} (x${item.qty}) - ₹${item.price * item.qty}\n`);
-                msg += `\n*Total Investment:* ₹${total}`;
-                window.open(`https://wa.me/${MY_WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
-              }} address={address} setAddress={setAddress} saveAddress={async () => {
-                if (!token) { setShowAuth(true); return; }
-                try {
-                  await axios.put(`${API_BASE}/api/user/address`, { email: userEmail || `client_${userPhone}@bhairavithreads.com`, address });
-                  showAlert("Shipping address saved successfully!");
-                } catch(e) { showAlert("Failed to save address.", "error"); }
-              }} />
+              <CartView 
+                cart={cart} 
+                updateQty={(cartKey, delta) => {
+                  setCart(prev => prev.map(item => {
+                    if (item.cartKey === cartKey) {
+                      const newQty = item.qty + delta;
+                      return newQty > 0 ? { ...item, qty: newQty } : null;
+                    }
+                    return item;
+                  }).filter(Boolean));
+                }} 
+                coupons={coupons} 
+                handleWhatsAppCheckout={async (total, code) => {
+                  if (!token) { setShowAuth(true); return; }
+                  if (cart.length === 0) { showAlert("Trunk is empty!", "error"); return; }
+                  try {
+                    await axios.post(`${API_BASE}/api/orders`, { customerEmail: userEmail || userPhone, items: cart, totalAmount: total, shippingAddress: address });
+                    fetchData();
+                  } catch(e) {}
+                  let msg = `New Order for Bhairavi Threads:\n\n*Customer:* ${userName} (${address.phone || userPhone})\n*Destination:* ${address.street || 'N/A'}, ${address.city || ''} - ${address.pincode || ''}\n*Coupon Applied:* ${code || 'None'}\n\n*Items:* \n`;
+                  cart.forEach((item, i) => msg += `${i+1}. ${item.name} (x${item.qty}) - ₹${item.price * item.qty}\n`);
+                  msg += `\n*Total Investment:* ₹${total}`;
+                  window.open(`https://wa.me/${MY_WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
+                }} 
+                address={address} 
+                setAddress={setAddress} 
+                saveAddress={async () => {
+                  if (!token) { setShowAuth(true); return; }
+                  try {
+                    await axios.put(`${API_BASE}/api/user/address`, { email: userEmail || `client_${userPhone}@bhairavithreads.com`, address });
+                    showAlert("Shipping address saved successfully!");
+                  } catch(e) { showAlert("Failed to save address.", "error"); }
+                }} 
+                products={products}
+                setDetailProduct={setDetailProduct}
+              />
+            ) : currentTab === 'wishlist' ? (
+              <WishlistView 
+                products={products} 
+                wishlist={wishlist} 
+                setWishlist={setWishlist} 
+                addToCart={(p) => {
+                  if (!token) { setShowAuth(true); return; }
+                  const cartKey = `${p._id}-0`;
+                  setCart(prev => {
+                    const existing = prev.find(item => item.cartKey === cartKey);
+                    if (existing) return prev.map(item => item.cartKey === cartKey ? { ...item, qty: item.qty + 1 } : item);
+                    const variant = p.variants?.[0] || {};
+                    return [...prev, {
+                      cartKey, _id: p._id, name: `${p.name} (${variant.color || 'Standard'})`,
+                      price: variant.price || p.price || 500, image: variant.images?.[0] || 'https://via.placeholder.com/150', qty: 1
+                    }];
+                  });
+                  triggerToast("Curated to Trunk", `Added ${p.name} to your trousseau bag.`, true);
+                }} 
+                setDetailProduct={setDetailProduct} 
+              />
             ) : currentTab === 'profile' ? (
               <ProfileView userName={userName} userEmail={userEmail} userPhone={userPhone} address={address} setAddress={setAddress} saveAddress={async () => {
                 try {
@@ -310,7 +357,11 @@ export default function App() {
 
       <AuthModal showAuth={showAuth} setShowAuth={setShowAuth} handleSuccessfulAuth={handleSuccessfulAuth} API_BASE={API_BASE} showAlert={showAlert} />
       <Lightbox zoomImage={zoomImage} setZoomImage={setZoomImage} />
-      <Toast toast={toast} onViewCart={() => setCurrentTab('cart')} />
+      <Toast toast={toast} onViewCart={() => {
+        setDetailProduct(null);
+        setCurrentTab('cart');
+        setToast(null);
+      }} />
 
       <a href={`https://wa.me/${MY_WHATSAPP_NUMBER}?text=Hello%20Bhairavi%20Threads!`} target="_blank" rel="noreferrer" className="fixed bottom-6 right-6 bg-emerald-600 text-white px-6 py-4 rounded-full shadow-2xl z-[70] font-semibold text-xs uppercase tracking-widest flex items-center gap-2.5 transition-all hover:scale-105 border border-emerald-400/40">
         💬 WhatsApp Support
