@@ -220,15 +220,28 @@ export default function LandingView({ setCurrentTab, token, setIsLoginView, setS
       <header className="absolute top-0 inset-x-0 z-50 bg-gradient-to-b from-black/60 via-black/20 to-transparent px-6 lg:px-16 py-6 transition-all">
         <div className="max-w-[1800px] mx-auto flex items-center justify-between text-white">
           
-          <div className="cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-            <h1 className="font-serif text-lg sm:text-2xl tracking-[0.25em] uppercase font-light text-white drop-shadow-md">
-              Bhairavi Threads
-            </h1>
-            <span className="text-[7px] uppercase tracking-[0.4em] text-gray-300 block font-mono">
-              Varanasi · Pune · Handloom
-            </span>
-          </div>
+         <div
+  className="cursor-pointer flex items-center gap-3 sm:gap-4"
+  onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+>
+  <div className="relative flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden border border-white/30 bg-white/10 backdrop-blur-sm shadow-lg">
+    <img
+      src="/favicon.jpeg"
+      alt="Bhairavi Threads Logo"
+      className="w-full h-full object-cover"
+    />
+  </div>
 
+  <div className="flex flex-col justify-center">
+    <h1 className="font-serif text-lg sm:text-2xl tracking-[0.25em] uppercase font-light text-white drop-shadow-md leading-none">
+      Bhairavi Threads
+    </h1>
+
+    <span className="mt-1.5 text-[7px] sm:text-[8px] uppercase tracking-[0.4em] text-gray-300 block font-mono">
+      Varanasi · Pune · Handloom
+    </span>
+  </div>
+</div>
           <nav className="hidden lg:flex items-center gap-8 text-[10px] uppercase tracking-[0.25em] font-medium text-gray-200">
             <button onClick={() => setCurrentTab("store")} className="hover:text-white transition-colors cursor-pointer bg-transparent border-none text-gray-200 drop-shadow">Store</button>
             <a href="#new-drops" className="hover:text-white transition-colors drop-shadow">Collections</a>
