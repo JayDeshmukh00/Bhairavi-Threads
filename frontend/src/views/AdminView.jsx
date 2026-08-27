@@ -119,9 +119,10 @@ export default function AdminView({
   };
 
   const downloadExcelTemplate = () => {
-    const csvContent = "data:text/csv;charset=utf-8,Name,Material,Description,Color,Design,Price,StockStatus,ImageURL\n" +
-      "Royal Banarasi Silk,Kalamkari,Pure gold zari handloom saree,Crimson,Classic Motifs,12500,In Stock,https://images.unsplash.com/photo-1610030469983-98e550d6193c\n" +
-      "Handpainted Organza,Hand Painted,Artisanal floral canvas,Ivory,Pichwai Flora,8900,In Stock,https://images.unsplash.com/photo-1584917865442-de89df76afd3";
+    const csvContent = "data:text/csv;charset=utf-8,Name,Material,Category,Description,Color,Design,Price,StockStatus,ImageURL\n" +
+      "Royal Banarasi Silk,Silk,Traditional,Pure gold zari handloom saree,Crimson,Classic Motifs,12500,In Stock,https://images.unsplash.com/photo-1610030469983-98e550d6193c\n" +
+      "Royal Banarasi Silk,Silk,Traditional,Pure gold zari handloom saree,Royal Blue,Classic Motifs,12500,In Stock,https://images.unsplash.com/photo-1610030469983-98e550d6193c\n" +
+      "Handpainted Organza,Organza,Contemporary,Artisanal floral canvas,Ivory,Pichwai Flora,8900,In Stock,https://images.unsplash.com/photo-1584917865442-de89df76afd3";
     
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -132,12 +133,33 @@ export default function AdminView({
     document.body.removeChild(link);
   };
 
+  const downloadCurrentInventoryCSV = () => {
+    let csv = "Name,Material,Category,Description,Color,Design,Price,StockStatus,ImageURL\n";
+    products.forEach(p => {
+      if (p.variants && p.variants.length > 0) {
+        p.variants.forEach(v => {
+          csv += `"${p.name || ''}","${p.material || ''}","${p.category || ''}","${(p.description || '').replace(/"/g, '""')}","${v.color || ''}","${v.design || ''}",${v.price || 0},"${v.stockStatus || 'In Stock'}","${v.images?.[0] || ''}"\n`;
+        });
+      } else {
+        csv += `"${p.name || ''}","${p.material || ''}","${p.category || ''}","${(p.description || '').replace(/"/g, '""')}","Default","Classic",0,"In Stock",""\n`;
+      }
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `Bhairavi_Threads_Live_Inventory_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleExcelUploadSubmit = async (e) => {
     e.preventDefault();
     if (!excelFile) return alert("Please select an Excel or CSV file.");
     setExcelUploading(true);
 
-    // Use FormData for safe file transmission to Vercel backend
     const formData = new FormData();
     formData.append("file", excelFile);
 
@@ -362,19 +384,24 @@ export default function AdminView({
       {adminTab === 'excel' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
           <div className="bg-white p-8 rounded-2xl border border-gray-200 space-y-6 shadow-[0_10px_30px_rgba(0,0,0,0.03)]">
-            <h3 className="text-xs uppercase tracking-[0.25em] font-semibold text-gray-900">Download Bulk Excel / CSV Template</h3>
+            <h3 className="text-xs uppercase tracking-[0.25em] font-semibold text-gray-900">Excel / CSV Operations</h3>
             <p className="text-xs text-gray-600 font-serif leading-relaxed font-light">
-              Download the official structured template format to populate multiple sarees, variants, colors, designs, and pricing offline.
+              Download the structured bulk-upload template or back up your live storefront inventory instantly into a CSV spreadsheet at runtime.
             </p>
-            <button onClick={downloadExcelTemplate} className="w-full bg-[#f9f8f6] hover:bg-gray-100 text-gray-900 py-3.5 text-xs uppercase tracking-[0.2em] rounded-xl border border-gray-200 transition-all cursor-pointer">
-              📥 Download Excel / CSV Template
-            </button>
+            <div className="space-y-3">
+              <button onClick={downloadExcelTemplate} className="w-full bg-[#f9f8f6] hover:bg-gray-100 text-gray-900 py-3.5 text-xs uppercase tracking-[0.2em] rounded-xl border border-gray-200 transition-all cursor-pointer">
+                📥 Download Blank Template
+              </button>
+              <button onClick={downloadCurrentInventoryCSV} className="w-full bg-black text-white hover:bg-neutral-800 py-3.5 text-xs uppercase tracking-[0.2em] rounded-xl transition-all cursor-pointer">
+                📊 Download Live Inventory CSV ⚡
+              </button>
+            </div>
           </div>
 
           <form onSubmit={handleExcelUploadSubmit} className="bg-white p-8 rounded-2xl border border-gray-200 space-y-6 shadow-[0_10px_30px_rgba(0,0,0,0.03)]">
             <h3 className="text-xs uppercase tracking-[0.25em] font-semibold text-gray-900">Upload Filled Excel / CSV File</h3>
             <p className="text-xs text-gray-600 font-serif leading-relaxed font-light">
-              Upload your completed spreadsheet. Products will be parsed and reflected in real-time across the storefront.
+              Upload your completed spreadsheet. Products and nested variants will be parsed and reflected in real-time across the storefront.
             </p>
             <input type="file" accept=".csv, .xlsx, .xls" onChange={(e) => setExcelFile(e.target.files[0])} className="text-xs w-full bg-[#f9f8f6] p-3 rounded-xl border border-gray-200 text-gray-700 cursor-pointer" required />
             <button type="submit" disabled={excelUploading} className="w-full bg-black hover:bg-neutral-800 text-white py-3.5 text-xs uppercase tracking-[0.2em] font-medium rounded-xl transition-all shadow-md cursor-pointer">

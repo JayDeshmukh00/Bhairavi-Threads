@@ -110,6 +110,7 @@ exports.addSareeWithVariants = async (req, res) => {
   }
 };
 
+// --- FIXED EXCEL UPLOAD FUNCTION MATCHING TEMPLATE HEADERS ---
 exports.uploadExcelSarees = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: "No file uploaded." });
@@ -118,25 +119,34 @@ exports.uploadExcelSarees = async (req, res) => {
     const excelData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
     for (const row of excelData) {
-      let imgs = row.images ? row.images.split(',').map(url => url.trim()) : [];
+      // Handles Capitalized template keys: Name, Material, Category, Description, Color, Design, Price, StockStatus, ImageURL
+      const name = row.Name || row.name;
+      if (!name) continue;
+
+      let imgs = row.ImageURL ? row.ImageURL.split(',').map(url => url.trim()) : (row.images ? row.images.split(',').map(url => url.trim()) : []);
+      
       let variant = {
-        color: row.color || 'Standard',
-        design: row.design || 'Classic',
-        price: Number(row.price) || 0,
-        stockStatus: row.stockStatus || 'In Stock',
+        color: row.Color || row.color || 'Standard',
+        design: row.Design || row.design || 'Classic',
+        price: Number(row.Price || row.price) || 0,
+        stockStatus: row.StockStatus || row.stockStatus || 'In Stock',
         images: imgs,
         videoUrl: row.videoUrl || ''
       };
 
-      let product = await Product.findOne({ name: row.name });
+      let product = await Product.findOne({ name });
       if (product) {
         product.variants.push(variant);
+        if (row.Category) product.category = row.Category;
+        if (row.Material) product.material = row.Material;
+        if (row.Description) product.description = row.Description;
         await product.save();
       } else {
         await new Product({
-          name: row.name || 'Unnamed Saree',
-          material: row.material || 'Cotton',
-          description: row.description || 'Exclusive handloom collection.',
+          name: name,
+          material: row.Material || row.material || 'Cotton',
+          category: row.Category || row.category || 'Traditional',
+          description: row.Description || row.description || 'Exclusive handloom collection.',
           variants: [variant]
         }).save();
       }
@@ -145,6 +155,30 @@ exports.uploadExcelSarees = async (req, res) => {
     res.status(201).json({ message: `Successfully processed Excel inventory upload!` });
   } catch (error) {
     res.status(500).json({ message: "Error parsing Excel", error: error.message });
+  }
+};
+
+// --- RUNTIME LIVE INVENTORY CSV EXPORT ROUTE ---
+exports.exportInventoryCSV = async (req, res) => {
+  try {
+    const products = await Product.find({});
+    let csv = "Name,Material,Category,Description,Color,Design,Price,StockStatus,ImageURL\n";
+    
+    products.forEach(p => {
+      if (p.variants && p.variants.length > 0) {
+        p.variants.forEach(v => {
+          csv += `"${p.name || ''}","${p.material || ''}","${p.category || ''}","${(p.description || '').replace(/"/g, '""')}","${v.color || ''}","${v.design || ''}",${v.price || 0},"${v.stockStatus || 'In Stock'}","${v.images?.[0] || ''}"\n`;
+        });
+      } else {
+        csv += `"${p.name || ''}","${p.material || ''}","${p.category || ''}","${(p.description || '').replace(/"/g, '""')}","Default","Classic",0,"In Stock",""\n`;
+      }
+    });
+
+    res.header('Content-Type', 'text/csv');
+    res.attachment(`Bhairavi_Threads_Live_Inventory_${Date.now()}.csv`);
+    return res.send(csv);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to export inventory CSV", error: error.message });
   }
 };
 

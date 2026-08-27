@@ -124,7 +124,6 @@ export default function App() {
 
     setShowAuth(false);
     
-    // Instantly transition and enter the main app view upon success
     sessionStorage.setItem('seenLanding', 'true');
     setHasSeenLanding(true);
     setCurrentTab('store');
@@ -164,7 +163,7 @@ export default function App() {
             categories={categories}
           />
 
-          <main className="w-[94%] max-w-[1600px] mx-auto py-8 md:py-12">
+          <main className="w-[94%] max-w-[1600px] mx-auto pt-2 md:pt-4 pb-8 md:pb-12">
             {detailProduct ? (
               <ProductDetailView 
                 detailProduct={detailProduct} 

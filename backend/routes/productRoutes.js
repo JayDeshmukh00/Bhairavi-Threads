@@ -4,6 +4,10 @@ const upload = require('../middleware/upload');
 const Product = require('../models/Product');
 
 router.get('/products', productController.getProducts);
+
+// Route for downloading live inventory CSV from the backend database
+router.get('/products/export-csv', productController.exportInventoryCSV);
+
 router.post('/add-single-saree', upload.fields([{ name: 'images', maxCount: 5 }, { name: 'video', maxCount: 1 }]), productController.addSingleSaree);
 router.post('/add-saree-with-variants', upload.any(), productController.addSareeWithVariants);
 router.post('/upload-sarees', upload.single('file'), productController.uploadExcelSarees);
