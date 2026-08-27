@@ -79,10 +79,9 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-// Only listen locally if not running as a Vercel serverless function
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
-}
+// Render requires app.listen() to open the port and accept web requests
+app.listen(PORT, () => {
+  console.log(`Backend running on port ${PORT}`);
+});
 
-// Export app for Vercel serverless deployment
 module.exports = app;
